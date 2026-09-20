@@ -1,0 +1,441 @@
+{% extends "base.html" %}
+
+{% block title %}MoodTune – AI Mood & Language Based Music Player{% endblock %}
+
+{% block content %}
+<!-- 1. Hero Section -->
+<section class="hero-section" id="hero">
+    <div class="hero-glow-backdrop" aria-hidden="true"></div>
+    <div class="hero-container">
+        <!-- Hero Text Content -->
+        <div class="hero-content">
+            <div class="hero-badge">
+                <span class="badge-dot"></span>
+                <span>AI-Driven Audio Discovery</span>
+            </div>
+            <h1 class="hero-title">
+                Music that matches<br>
+                <span class="text-gradient">your mood.</span>
+            </h1>
+            <p class="hero-description">
+                Choose how you feel and the language you love. MoodTune uses AI to create a personalized music experience just for you.
+            </p>
+            <div class="hero-actions">
+                <a href="#moods" class="btn btn-primary btn-lg">
+                    <svg class="btn-icon" viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                    </svg>
+                    <span>Start Listening</span>
+                </a>
+                <a href="#how-it-works" class="btn btn-secondary btn-lg">
+                    <span>How It Works</span>
+                </a>
+            </div>
+            <div class="hero-stats">
+                <div class="stat-item">
+                    <span class="stat-number">8+</span>
+                    <span class="stat-label">Mood Modes</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat-item">
+                    <span class="stat-number">9+</span>
+                    <span class="stat-label">Languages</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat-item">
+                    <span class="stat-number">Instant</span>
+                    <span class="stat-label">AI Curation</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hero Music Player Visualization -->
+        <div class="hero-visual">
+            <!-- Floating music note particles -->
+            <div class="floating-notes" aria-hidden="true">
+                <span class="note note-1">♪</span>
+                <span class="note note-2">♫</span>
+                <span class="note note-3">♩</span>
+                <span class="note note-4">♬</span>
+            </div>
+
+            <!-- Floating Music Player Card -->
+            <div class="player-card glass-panel" id="floatingPlayer">
+                <div class="player-header">
+                    <span class="player-pill">NOW PLAYING PREVIEW</span>
+                    <div class="player-status-dot" title="Live Visualization"></div>
+                </div>
+
+                <!-- Album Artwork Placeholder (Modern Music Artwork) -->
+                <div class="album-artwork" aria-label="Album Artwork Placeholder">
+                    <div class="album-art-inner">
+                        <div class="artwork-graphic">
+                            <svg viewBox="0 0 64 64" width="48" height="48" fill="none">
+                                <rect x="8" y="8" width="48" height="48" rx="8" stroke="url(#artGrad)" stroke-width="2"/>
+                                <circle cx="32" cy="32" r="12" stroke="url(#artGrad)" stroke-width="1.5" stroke-dasharray="3 3"/>
+                                <path d="M26 38V26l14-3v12" stroke="url(#artGrad)" stroke-width="2" stroke-linecap="round"/>
+                                <circle cx="23" cy="38" r="3" fill="url(#artGrad)"/>
+                                <circle cx="37" cy="35" r="3" fill="url(#artGrad)"/>
+                                <defs>
+                                    <linearGradient id="artGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" stop-color="#ff5e62"/>
+                                        <stop offset="50%" stop-color="#ff8e53"/>
+                                        <stop offset="100%" stop-color="#8b5cf6"/>
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                        </div>
+                        <span class="artwork-label">Album Artwork</span>
+                    </div>
+                </div>
+
+                <!-- Track Information -->
+                <div class="track-info">
+                    <div class="track-meta">
+                        <h3 class="track-title">Midnight Memories</h3>
+                        <p class="track-artist">MoodTune Radio • Chill &amp; Relaxed</p>
+                    </div>
+                    <button class="track-like-btn" aria-label="Favorite preview" title="Favorite">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Waveform Graphic -->
+                <div class="waveform-container" aria-hidden="true">
+                    <svg class="waveform-svg" viewBox="0 0 300 36" fill="none" preserveAspectRatio="none">
+                        <path d="M0,18 Q15,4 30,18 T60,18 T90,30 T120,10 T150,26 T180,6 T210,22 T240,12 T270,24 T300,18" stroke="url(#waveGradient)" stroke-width="2.5" stroke-linecap="round"/>
+                        <defs>
+                            <linearGradient id="waveGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="#ff6b6b"/>
+                                <stop offset="50%" stop-color="#ff8e53"/>
+                                <stop offset="100%" stop-color="#8b5cf6"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+
+                <!-- Player Controls -->
+                <div class="player-controls">
+                    <button class="control-btn" aria-label="Previous track (visual only)" title="Previous">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                            <polygon points="19 20 9 12 19 4 19 20"></polygon>
+                            <line x1="5" y1="19" x2="5" y2="5" stroke="currentColor" stroke-width="2.5"></line>
+                        </svg>
+                    </button>
+                    <button class="control-btn play-btn" id="previewPlayBtn" aria-label="Toggle visual playback animation" title="Play / Pause preview">
+                        <svg class="play-icon" viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                            <polygon points="6 4 20 12 6 20 6 4"></polygon>
+                        </svg>
+                        <svg class="pause-icon hidden" viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                            <rect x="6" y="4" width="4" height="16"></rect>
+                            <rect x="14" y="4" width="4" height="16"></rect>
+                        </svg>
+                    </button>
+                    <button class="control-btn" aria-label="Next track (visual only)" title="Next">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                            <polygon points="5 4 15 12 5 20 5 4"></polygon>
+                            <line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2.5"></line>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Animated Equalizer Bars -->
+                <div class="equalizer-wrapper" aria-hidden="true">
+                    <div class="equalizer-bar bar-1"></div>
+                    <div class="equalizer-bar bar-2"></div>
+                    <div class="equalizer-bar bar-3"></div>
+                    <div class="equalizer-bar bar-4"></div>
+                    <div class="equalizer-bar bar-5"></div>
+                    <div class="equalizer-bar bar-6"></div>
+                    <div class="equalizer-bar bar-7"></div>
+                    <div class="equalizer-bar bar-8"></div>
+                    <div class="equalizer-bar bar-9"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 2. Mood Preview Section -->
+<section class="section-container" id="moods">
+    <div class="section-header text-center">
+        <span class="section-badge">Mood Palette</span>
+        <h2 class="section-title">How are you feeling?</h2>
+        <p class="section-subtitle">Your mood sets the tone. Choose a vibe to preview the musical frequency.</p>
+    </div>
+
+    <div class="mood-grid">
+        <!-- Card 1: Happy -->
+        <div class="mood-card" role="button" tabindex="0" data-mood="happy">
+            <div class="mood-emoji">😊</div>
+            <div class="mood-details">
+                <h3 class="mood-name">Happy</h3>
+                <p class="mood-desc">Bright and uplifting</p>
+            </div>
+            <div class="mood-card-indicator" aria-hidden="true"></div>
+        </div>
+
+        <!-- Card 2: Sad -->
+        <div class="mood-card" role="button" tabindex="0" data-mood="sad">
+            <div class="mood-emoji">😢</div>
+            <div class="mood-details">
+                <h3 class="mood-name">Sad</h3>
+                <p class="mood-desc">Deep, soulful and reflective</p>
+            </div>
+            <div class="mood-card-indicator" aria-hidden="true"></div>
+        </div>
+
+        <!-- Card 3: Energetic -->
+        <div class="mood-card" role="button" tabindex="0" data-mood="energetic">
+            <div class="mood-emoji">⚡</div>
+            <div class="mood-details">
+                <h3 class="mood-name">Energetic</h3>
+                <p class="mood-desc">High energy and upbeat</p>
+            </div>
+            <div class="mood-card-indicator" aria-hidden="true"></div>
+        </div>
+
+        <!-- Card 4: Relaxed -->
+        <div class="mood-card" role="button" tabindex="0" data-mood="relaxed">
+            <div class="mood-emoji">😌</div>
+            <div class="mood-details">
+                <h3 class="mood-name">Relaxed</h3>
+                <p class="mood-desc">Calm and peaceful</p>
+            </div>
+            <div class="mood-card-indicator" aria-hidden="true"></div>
+        </div>
+
+        <!-- Card 5: Romantic -->
+        <div class="mood-card" role="button" tabindex="0" data-mood="romantic">
+            <div class="mood-emoji">❤️</div>
+            <div class="mood-details">
+                <h3 class="mood-name">Romantic</h3>
+                <p class="mood-desc">Soft and emotional</p>
+            </div>
+            <div class="mood-card-indicator" aria-hidden="true"></div>
+        </div>
+
+        <!-- Card 6: Chill -->
+        <div class="mood-card" role="button" tabindex="0" data-mood="chill">
+            <div class="mood-emoji">😎</div>
+            <div class="mood-details">
+                <h3 class="mood-name">Chill</h3>
+                <p class="mood-desc">Laid-back beats and vibes</p>
+            </div>
+            <div class="mood-card-indicator" aria-hidden="true"></div>
+        </div>
+
+        <!-- Card 7: Motivated -->
+        <div class="mood-card" role="button" tabindex="0" data-mood="motivated">
+            <div class="mood-emoji">🔥</div>
+            <div class="mood-details">
+                <h3 class="mood-name">Motivated</h3>
+                <p class="mood-desc">Focus, drive and power</p>
+            </div>
+            <div class="mood-card-indicator" aria-hidden="true"></div>
+        </div>
+
+        <!-- Card 8: Party -->
+        <div class="mood-card" role="button" tabindex="0" data-mood="party">
+            <div class="mood-emoji">🎉</div>
+            <div class="mood-details">
+                <h3 class="mood-name">Party</h3>
+                <p class="mood-desc">Dance, celebration and fun</p>
+            </div>
+            <div class="mood-card-indicator" aria-hidden="true"></div>
+        </div>
+    </div>
+</section>
+
+<!-- 3. Language Preview Section -->
+<section class="section-container" id="languages">
+    <div class="section-header text-center">
+        <span class="section-badge">Cultural Harmony</span>
+        <h2 class="section-title">Music in your language.</h2>
+        <p class="section-subtitle">Because the songs you love should feel familiar.</p>
+    </div>
+
+    <div class="language-wrapper">
+        <div class="language-pills" role="list">
+            <!-- Prominent languages -->
+            <button class="lang-pill prominent active" role="listitem" data-lang="kannada">
+                <span class="lang-check" aria-hidden="true">✓</span>
+                <span class="lang-name">Kannada</span>
+                <span class="lang-badge">Popular</span>
+            </button>
+            <button class="lang-pill prominent" role="listitem" data-lang="hindi">
+                <span class="lang-check" aria-hidden="true">✓</span>
+                <span class="lang-name">Hindi</span>
+                <span class="lang-badge">Popular</span>
+            </button>
+            <button class="lang-pill prominent" role="listitem" data-lang="english">
+                <span class="lang-check" aria-hidden="true">✓</span>
+                <span class="lang-name">English</span>
+                <span class="lang-badge">Popular</span>
+            </button>
+
+            <!-- Additional languages -->
+            <button class="lang-pill" role="listitem" data-lang="tamil">
+                <span class="lang-name">Tamil</span>
+            </button>
+            <button class="lang-pill" role="listitem" data-lang="telugu">
+                <span class="lang-name">Telugu</span>
+            </button>
+            <button class="lang-pill" role="listitem" data-lang="malayalam">
+                <span class="lang-name">Malayalam</span>
+            </button>
+            <button class="lang-pill" role="listitem" data-lang="marathi">
+                <span class="lang-name">Marathi</span>
+            </button>
+            <button class="lang-pill" role="listitem" data-lang="bengali">
+                <span class="lang-name">Bengali</span>
+            </button>
+            <button class="lang-pill" role="listitem" data-lang="punjabi">
+                <span class="lang-name">Punjabi</span>
+            </button>
+        </div>
+        <p class="language-hint">Tap any language to preview selection state.</p>
+    </div>
+</section>
+
+<!-- 4. How It Works Section -->
+<section class="section-container" id="how-it-works">
+    <div class="section-header text-center">
+        <span class="section-badge">Simple Flow</span>
+        <h2 class="section-title">Your music journey, simplified.</h2>
+        <p class="section-subtitle">Three intuitive steps to start listening to tailored tunes.</p>
+    </div>
+
+    <div class="steps-container">
+        <!-- Step 1 -->
+        <div class="step-card glass-panel">
+            <div class="step-header">
+                <span class="step-number">01</span>
+                <div class="step-icon-wrap">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
+                        <line x1="9" y1="9" x2="9.01" y2="9"></line>
+                        <line x1="15" y1="9" x2="15.01" y2="9"></line>
+                    </svg>
+                </div>
+            </div>
+            <h3 class="step-title">Choose your mood</h3>
+            <p class="step-desc">Tell MoodTune how you're feeling right now with a single tap.</p>
+        </div>
+
+        <div class="step-arrow desktop-only" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="step-card glass-panel">
+            <div class="step-header">
+                <span class="step-number">02</span>
+                <div class="step-icon-wrap">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="2" y1="12" x2="22" y2="12"></line>
+                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                    </svg>
+                </div>
+            </div>
+            <h3 class="step-title">Choose your language</h3>
+            <p class="step-desc">Pick the language you want to hear from regional and global options.</p>
+        </div>
+
+        <div class="step-arrow desktop-only" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="step-card glass-panel">
+            <div class="step-header">
+                <span class="step-number">03</span>
+                <div class="step-icon-wrap accent-icon">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                    </svg>
+                </div>
+            </div>
+            <h3 class="step-title">Let AI find your music</h3>
+            <p class="step-desc">MoodTune creates a music experience based on your choices.</p>
+        </div>
+    </div>
+</section>
+
+<!-- 5. AI Feature Preview Section -->
+<section class="section-container" id="ai-preview">
+    <div class="ai-feature-card glass-panel">
+        <div class="ai-feature-glow" aria-hidden="true"></div>
+        <div class="ai-feature-layout">
+            <div class="ai-feature-text">
+                <span class="section-badge ai-badge">Next-Gen Intelligence</span>
+                <h2 class="ai-feature-title">Your mood. Your music. Powered by AI.</h2>
+                <p class="ai-feature-desc">
+                    MoodTune understands your mood and combines it with your language preference to discover music that fits the moment.
+                </p>
+                <div class="ai-feature-points">
+                    <div class="point-item">
+                        <span class="point-dot"></span>
+                        <span>Context-aware mood mapping</span>
+                    </div>
+                    <div class="point-item">
+                        <span class="point-dot"></span>
+                        <span>Multi-language harmonic curation</span>
+                    </div>
+                    <div class="point-item">
+                        <span class="point-dot"></span>
+                        <span>Continuous algorithmic refinement</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Decorative AI/Music Visualization -->
+            <div class="ai-visual-box" aria-hidden="true">
+                <div class="ai-node-cluster">
+                    <div class="ai-input-pill mood-pill">Mood: Chill 😎</div>
+                    <div class="ai-flow-line"></div>
+                    <div class="ai-core-node">
+                        <div class="ai-core-pulse"></div>
+                        <span class="ai-core-icon">✦</span>
+                        <span class="ai-core-label">AI ENGINE</span>
+                    </div>
+                    <div class="ai-flow-line"></div>
+                    <div class="ai-input-pill lang-pill">Language: Kannada</div>
+                </div>
+                <div class="ai-output-preview">
+                    <span class="output-label">Generated Soundscape:</span>
+                    <span class="output-value">Acoustic Indie &amp; Melodic Lo-Fi</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 6. Call To Action (CTA) Section -->
+<section class="section-container cta-section">
+    <div class="cta-card glass-panel text-center">
+        <div class="cta-glow" aria-hidden="true"></div>
+        <h2 class="cta-title">Ready to find your sound?</h2>
+        <p class="cta-description">Choose a mood. Pick a language. Press play.</p>
+        <div class="cta-actions">
+            <a href="#moods" class="btn btn-primary btn-lg cta-btn">
+                <span>Start Listening</span>
+                <svg class="btn-arrow" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+            </a>
+        </div>
+    </div>
+</section>
+{% endblock %}
