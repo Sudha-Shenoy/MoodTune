@@ -2,7 +2,10 @@
 import os
 from flask import Flask
 from config.config import Config
+from models import db
 from routes.main_routes import main_bp
+from routes.auth_routes import auth_bp
+from routes.recommendation_routes import recommendation_bp
 
 
 def create_app(config_class=Config):
@@ -10,8 +13,24 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
 
+    # Initialize extensions
+    db.init_app(app)
+
     # Register blueprints
     app.register_blueprint(main_bp)
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(recommendation_bp)
+
+    # CLI command for table creation
+    @app.cli.command("init-db")
+    def init_db_command():
+        """Create database tables."""
+        try:
+            db.create_all()
+            print("Database tables created successfully.")
+        except Exception as exc:
+            print(f"Error initializing database: {exc}")
+            print("Please verify MySQL80 is running and DB credentials in .env are configured.")
 
     return app
 

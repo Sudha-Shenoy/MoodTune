@@ -1,14 +1,19 @@
-"""Unit and route tests for MoodTune Module 02."""
+"""Unit and route tests for MoodTune core application."""
 import pytest
 from app import create_app
 from config.config import TestingConfig
+from models import db
 
 
 @pytest.fixture
 def app():
     """Create and configure a Flask application instance for testing."""
     application = create_app(TestingConfig)
-    return application
+    with application.app_context():
+        db.create_all()
+        yield application
+        db.session.remove()
+        db.drop_all()
 
 
 @pytest.fixture
