@@ -3,7 +3,7 @@
 Handles AI music recommendation generation requests for authenticated users.
 """
 import logging
-from flask import Blueprint, jsonify, redirect, request, session, url_for, flash
+from flask import Blueprint, current_app, jsonify, redirect, request, session, url_for, flash
 from services.ai_service import (
     generate_music_recommendation,
     validate_inputs,
@@ -129,7 +129,8 @@ def search_music():
 
     # 3. Call YouTube service with controlled quota limits
     try:
-        videos = search_music_for_recommendation(search_queries, max_total_results=6)
+        target_count = current_app.config.get("YOUTUBE_TARGET_RESULTS", 18)
+        videos = search_music_for_recommendation(search_queries, max_total_results=target_count)
     except YouTubeQuotaError as err:
         logger.error(f"YouTube quota limit exceeded: {err}")
         if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest":
@@ -166,6 +167,7 @@ def search_music():
             "success": True,
             "count": len(videos),
             "videos": videos,
+            "mood_quotes": ai_recommendation.get("mood_quotes", []),
         }), 200
 
     return redirect(url_for("main.index"))

@@ -470,20 +470,59 @@
     </div>
 </section>
 
-<!-- 3. YouTube Music Results Section (Module 06) -->
-<section class="section-container" id="youtubeResultsSection" {% if not youtube_results %}style="display: none;"{% endif %}>
-    <div class="section-header text-center">
-        <div class="section-badge-wrap">
-            <span class="section-badge">Curated Stream</span>
+<!-- 3. MoodTune Music Discovery Mix & Player Experience (Module 07) -->
+<section class="section-container moodtune-discovery-section" id="youtubeResultsSection" {% if not youtube_results %}style="display: none;"{% endif %}>
+    <!-- Discovery Mix Hero Banner -->
+    <div class="mix-hero-card glass-panel" id="moodtuneMixHero">
+        <div class="mix-hero-glow" aria-hidden="true"></div>
+        <div class="mix-hero-layout">
+            <div class="mix-hero-art">
+                <div class="mix-hero-art-stack">
+                    <span class="mix-hero-art-icon">🎧</span>
+                    <div class="soundwave-bars mix-soundwave" aria-hidden="true">
+                        <span class="soundwave-bar"></span>
+                        <span class="soundwave-bar"></span>
+                        <span class="soundwave-bar"></span>
+                        <span class="soundwave-bar"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="mix-hero-details">
+                <div class="mix-badges-row">
+                    <span class="mix-hero-badge">
+                        <span class="badge-sparkle">✦</span>
+                        <span>YOUR MOODTUNE MIX</span>
+                    </span>
+                    <span class="mix-picks-badge" id="mixPicksCompatBadge">Your MoodTune Picks</span>
+                    <span class="mix-count-badge" id="mixHeroCountBadge">
+                        {{ youtube_results|length if youtube_results else 0 }} songs selected for your vibe
+                    </span>
+                </div>
+                <h2 class="mix-hero-title" id="mixHeroTitle">
+                    {% if session.get('selected_mood') and session.get('selected_language') %}
+                        Your {{ session.get('selected_mood') }} {{ session.get('selected_language') }} Mix
+                    {% else %}
+                        Your MoodTune Mix
+                    {% endif %}
+                </h2>
+                <!-- AI Narrative Quote from Module 05 -->
+                <p class="mix-hero-description" id="mixHeroDescText">
+                    {% if ai_recommendation and ai_recommendation.description %}
+                        {{ ai_recommendation.description }}
+                    {% else %}
+                        Curated tracks matching your AI-analyzed musical frequency and soundscape.
+                    {% endif %}
+                </p>
+                <!-- AI Music Style Tags -->
+                <div class="mix-hero-tags" id="mixHeroStyleTags">
+                    {% if ai_recommendation and ai_recommendation.music_style %}
+                        {% for style in ai_recommendation.music_style %}
+                            <span class="mix-style-tag">{{ style }}</span>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
         </div>
-        <h2 class="section-title">Your MoodTune Picks</h2>
-        <p class="section-subtitle" id="youtubeResultsSubtitle">
-            {% if session.get('selected_mood') and session.get('selected_language') %}
-                Real YouTube tracks curated for your {{ session.get('selected_mood') }} vibe in {{ session.get('selected_language') }}.
-            {% else %}
-                Real YouTube tracks curated for your vibe.
-            {% endif %}
-        </p>
     </div>
 
     <!-- YouTube Music Search Loading Indicator -->
@@ -516,36 +555,224 @@
         </div>
     </div>
 
-    <!-- YouTube Results Grid -->
-    <div class="youtube-results-grid" id="youtubeResultsGrid">
-        {% if youtube_results %}
-            {% for video in youtube_results %}
-                <div class="music-card glass-panel" data-video-id="{{ video.video_id }}">
-                    <div class="music-card-thumb-wrap">
-                        <img src="{{ video.thumbnail }}" alt="{{ video.title }}" class="music-card-thumb" loading="lazy">
-                        <div class="music-card-play-overlay" aria-hidden="true">
-                            <span class="overlay-play-icon">▶</span>
+    <!-- 4. Stable Player Anchor & Now Playing Showcase (Module 07) -->
+    <div id="moodtunePlayerAnchor" class="now-playing-anchor">
+        <div class="moodtune-now-playing glass-panel" id="moodtuneNowPlaying" style="display: none;" role="region" aria-label="Now Playing Player">
+            <div class="now-playing-container">
+                <!-- Left: Contained YouTube Video Player Host (16:9, min 360x203px) -->
+                <div class="now-playing-visual-col">
+                    <div class="yt-player-contained" id="ytPlayerWrapper">
+                        <div id="ytPlayerHost"></div>
+                    </div>
+                </div>
+
+                <!-- Right: Now Playing Metadata, Controls, Scrubber, Volume -->
+                <div class="now-playing-info-col">
+                    <div class="now-playing-top-bar">
+                        <div class="now-playing-badge-wrap">
+                            <span class="now-playing-status-badge" id="nowPlayingStatusBadge">
+                                <div class="soundwave-bars" id="nowPlayingSoundwave" aria-hidden="true">
+                                    <span class="soundwave-bar"></span>
+                                    <span class="soundwave-bar"></span>
+                                    <span class="soundwave-bar"></span>
+                                </div>
+                                <span id="nowPlayingStatusText">NOW PLAYING</span>
+                            </span>
+                            <span class="now-playing-mood-badge" id="nowPlayingMoodBadge">
+                                {{ session.get('selected_language') or '' }}{% if session.get('selected_language') and session.get('selected_mood') %} • {% endif %}{{ session.get('selected_mood') or '' }}
+                            </span>
+                        </div>
+
+                        <div class="now-playing-header-actions">
+                            <button type="button" class="btn-player-action" id="playerQueueToggleBtn" aria-label="Toggle Up Next Queue" title="Up Next Queue">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                                    <path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h10v2H4z"></path>
+                                </svg>
+                                <span class="queue-btn-label">Queue</span>
+                                <span class="queue-count-badge" id="queueCountBadge">{{ youtube_results|length if youtube_results else 0 }}</span>
+                            </button>
+
+                            <button type="button" class="btn-player-action" id="playerMinimizeBtn" aria-label="Minimize Player" title="Minimize to mini-player">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                            </button>
+
+                            <button type="button" class="btn-player-action" id="playerExpandBtn" style="display: none;" aria-label="Expand Player" title="Expand to full player">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                                    <polyline points="15 3 21 3 21 9"></polyline>
+                                    <polyline points="9 21 3 21 3 15"></polyline>
+                                    <line x1="21" y1="3" x2="14" y2="10"></line>
+                                    <line x1="3" y1="21" x2="10" y2="14"></line>
+                                </svg>
+                            </button>
+
+                            <button type="button" class="btn-player-action" id="playerCloseBtn" aria-label="Stop and Close Player" title="Stop & Close">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                </svg>
+                            </button>
                         </div>
                     </div>
-                    <div class="music-card-body">
-                        <h3 class="music-card-title" title="{{ video.title }}">{{ video.title }}</h3>
-                        <div class="music-card-channel">
-                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M9 18V5l12-2v13"></path>
-                                <circle cx="6" cy="18" r="3"></circle>
-                                <circle cx="18" cy="16" r="3"></circle>
+
+                    <div class="now-playing-track-meta">
+                        <h3 class="now-playing-title" id="nowPlayingTitle">Song Title</h3>
+                        <p class="now-playing-channel" id="nowPlayingChannel">Channel / Artist</p>
+                        <p class="now-playing-quote" id="nowPlayingQuote">“Music tailored for your vibe.”</p>
+                    </div>
+
+                    <!-- Primary Playback Controls: Prev, Play/Pause, Next -->
+                    <div class="now-playing-controls-row">
+                        <button type="button" class="player-ctrl-btn" id="playerPrevBtn" aria-label="Previous Track" title="Previous Song">
+                            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                                <polygon points="19 20 9 12 19 4 19 20"></polygon>
+                                <line x1="5" y1="19" x2="5" y2="5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"></line>
                             </svg>
-                            <span>{{ video.channel_title }}</span>
+                        </button>
+
+                        <button type="button" class="player-main-play-btn" id="playerPlayPauseBtn" aria-label="Play or Pause" title="Play / Pause">
+                            <svg class="player-play-icon" viewBox="0 0 24 24" width="26" height="26" fill="currentColor">
+                                <polygon points="6 4 20 12 6 20 6 4"></polygon>
+                            </svg>
+                            <svg class="player-pause-icon" style="display: none;" viewBox="0 0 24 24" width="26" height="26" fill="currentColor">
+                                <rect x="6" y="4" width="4" height="16" rx="1"></rect>
+                                <rect x="14" y="4" width="4" height="16" rx="1"></rect>
+                            </svg>
+                        </button>
+
+                        <button type="button" class="player-ctrl-btn" id="playerNextBtn" aria-label="Next Track" title="Next Song">
+                            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                                <polygon points="5 4 15 12 5 20 5 4"></polygon>
+                                <line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"></line>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Scrubber & Timing: 01:24 / 04:32 -->
+                    <div class="now-playing-progress-section">
+                        <div class="progress-slider-container">
+                            <input type="range" class="player-progress-slider" id="playerProgressBar" min="0" max="100" value="0" step="0.1" aria-label="Seek track position">
                         </div>
-                        <div class="music-card-actions">
-                            <a href="{{ video.youtube_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-youtube-watch">
-                                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
-                                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                        <div class="progress-time-row">
+                            <span class="player-time" id="playerCurrentTime">00:00</span>
+                            <span class="player-time-divider">/</span>
+                            <span class="player-time" id="playerDuration">00:00</span>
+                        </div>
+                    </div>
+
+                    <!-- Bottom Row: Volume Controls -->
+                    <div class="now-playing-bottom-row">
+                        <div class="now-playing-volume">
+                            <button type="button" class="player-vol-btn" id="playerMuteBtn" aria-label="Mute or Unmute" title="Mute / Unmute">
+                                <svg class="vol-icon-high" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor"></polygon>
+                                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
                                 </svg>
-                                <span>Watch on YouTube</span>
-                            </a>
-                            <span class="music-card-ready-badge" title="Ready for playback player in Module 07">Module 07 Ready</span>
+                                <svg class="vol-icon-mute" style="display: none;" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor"></polygon>
+                                    <line x1="23" y1="9" x2="17" y2="15"></line>
+                                    <line x1="17" y1="9" x2="23" y2="15"></line>
+                                </svg>
+                            </button>
+                            <input type="range" class="player-volume-slider" id="playerVolumeSlider" min="0" max="100" value="80" aria-label="Volume Slider">
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Up Next Queue Drawer -->
+            <div class="player-queue-drawer" id="playerQueueDrawer" style="display: none;" aria-label="Up Next Queue">
+                <div class="queue-drawer-header">
+                    <div class="queue-title-wrap">
+                        <h4 class="queue-title">UP NEXT</h4>
+                        <span class="queue-subtitle" id="queueSubtitleText">{{ youtube_results|length if youtube_results else 0 }} songs in this mix</span>
+                    </div>
+                    <button type="button" class="queue-close-btn" id="queueCloseBtn" aria-label="Close Queue">×</button>
+                </div>
+                <div class="queue-list" id="playerQueueList">
+                    <!-- Dynamically populated by MoodTunePlayer.renderQueueUI() -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Curated Collection Header -->
+    <div class="discovery-grid-header">
+        <div class="discovery-header-left">
+            <div class="discovery-badge-row">
+                <span class="discovery-vibe-badge">DISCOVERY</span>
+                <span class="mix-picks-badge-secondary">Your MoodTune Picks</span>
+            </div>
+            <h3 class="discovery-grid-title">YOUR VIBE</h3>
+            <p class="discovery-grid-subtitle" id="youtubeResultsSubtitle">
+                Songs selected for your mood and language
+            </p>
+        </div>
+        <div class="discovery-header-right">
+            <span class="collection-count-pill" id="collectionCountPill">
+                {{ youtube_results|length if youtube_results else 0 }} Songs
+            </span>
+        </div>
+    </div>
+
+    <!-- MoodTune Clean Music List (Replaces YouTube Search Cards) -->
+    <div class="youtube-results-grid moodtune-song-list" id="youtubeResultsGrid">
+        {% if youtube_results %}
+            {% for video in youtube_results %}
+                <div class="music-card music-song-row glass-panel" data-video-id="{{ video.video_id }}" data-index="{{ loop.index0 }}">
+                    <!-- Mood Artwork (pure CSS/SVG based on mood, no YouTube thumbnail dominating) -->
+                    <div class="song-row-art-wrap">
+                        <div class="mood-artwork-box mood-art-{{ session.get('selected_mood')|lower if session.get('selected_mood') else 'chill' }}" data-mood="{{ session.get('selected_mood') or 'Chill' }}">
+                            <span class="mood-art-icon">🎵</span>
+                            <div class="card-now-playing-badge" aria-hidden="true">
+                                <span class="equalizer-bars-mini">
+                                    <span class="eq-bar"></span>
+                                    <span class="eq-bar"></span>
+                                    <span class="eq-bar"></span>
+                                    <span class="eq-bar"></span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Song Info & AI Mood Quote -->
+                    <div class="song-row-info">
+                        <div class="song-row-title-row">
+                            <span class="song-row-index">{{ "%02d" % loop.index }}</span>
+                            <h4 class="music-card-title song-row-title" title="{{ video.title }}">{{ video.title }}</h4>
+                        </div>
+                        <p class="song-row-quote">
+                            “{{ ai_recommendation.mood_quotes[loop.index0 % ai_recommendation.mood_quotes|length] if (ai_recommendation and ai_recommendation.mood_quotes) else (ai_recommendation.description if ai_recommendation else 'Melodic rhythms echoing the feeling of the moment.') }}”
+                        </p>
+                        <div class="song-row-meta">
+                            <span class="song-meta-pill">{{ session.get('selected_language') or 'Music' }} • {{ session.get('selected_mood') or 'Vibe' }}</span>
+                            <span class="music-card-channel song-meta-channel">
+                                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M9 18V5l12-2v13"></path>
+                                    <circle cx="6" cy="18" r="3"></circle>
+                                    <circle cx="18" cy="16" r="3"></circle>
+                                </svg>
+                                <span>{{ video.channel_title }}</span>
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Actions: Primary Play, Secondary Watch on YouTube -->
+                    <div class="song-row-actions music-card-actions">
+                        <button type="button" class="btn btn-primary btn-play-song" data-video-id="{{ video.video_id }}" data-index="{{ loop.index0 }}" aria-label="Play {{ video.title }}">
+                            <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+                                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                            </svg>
+                            <span class="btn-play-label">Play</span>
+                        </button>
+                        <a href="{{ video.youtube_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-youtube-watch" aria-label="Watch {{ video.title }} on YouTube" title="Watch on YouTube">
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                            </svg>
+                            <span>Watch on YouTube</span>
+                        </a>
                     </div>
                 </div>
             {% endfor %}

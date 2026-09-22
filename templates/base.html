@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
     <title>{% block title %}MoodTune – AI Mood & Language Based Music Player{% endblock %}</title>
     
     <!-- Google Fonts: Plus Jakarta Sans -->
@@ -11,7 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <!-- Main Stylesheet (with cache busting) -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='5') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='8') }}">
 </head>
 <body>
     <!-- Navigation Bar -->
@@ -136,6 +137,7 @@
     </footer>
 
     <!-- Main JavaScript (with cache busting) -->
-    <script src="{{ url_for('static', filename='js/main.js', v='5') }}"></script>
+    <script src="{{ url_for('static', filename='js/main.js', v='7') }}"></script>
+    <script src="{{ url_for('static', filename='js/player.js', v='3') }}"></script>
 </body>
 </html>

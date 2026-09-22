@@ -188,8 +188,9 @@ def search_youtube_query(
     params = {
         "part": "snippet",
         "type": "video",
+        "videoEmbeddable": "true",
         "q": query.strip(),
-        "maxResults": min(max(1, max_results), 10),
+        "maxResults": min(max(1, max_results), 15),
         "key": api_key,
     }
 
@@ -253,23 +254,26 @@ def search_youtube_query(
     return results
 
 
+DEFAULT_TARGET_RESULTS = 18
+
+
 def search_music_for_recommendation(
     search_queries: List[str],
-    max_total_results: int = 6,
+    max_total_results: int = DEFAULT_TARGET_RESULTS,
     api_key: Optional[str] = None,
 ) -> List[Dict[str, str]]:
     """Execute a controlled search strategy using Module 05 AI search queries.
 
     Rules enforced:
-    1. Selects only the top 1-2 AI search queries to minimize quota usage.
-    2. Fetches 3-4 videos per query.
+    1. Selects multiple AI search queries (up to 4) when target > 6, or top 2 when target <= 6.
+    2. Fetches controlled batches per query with maxResults up to 10.
     3. Merges and deduplicates videos by `video_id`.
-    4. Caps final result count at `max_total_results` (default 6, maximum 8).
+    4. Capped at `max_total_results` (default 18, configurable).
     5. Returns compact video objects (strictly no descriptions or raw payloads).
 
     Args:
         search_queries: List of AI-generated search query strings.
-        max_total_results: Maximum number of songs to return (default 6).
+        max_total_results: Maximum number of songs to return (default 18).
         api_key: Optional YouTube API key.
 
     Returns:
@@ -279,37 +283,100 @@ def search_music_for_recommendation(
         logger.warning("Empty or invalid search_queries provided to search_music_for_recommendation.")
         return []
 
-    # Clean queries and select top 1-2
-    candidate_queries = [q.strip() for q in search_queries if isinstance(q, str) and q.strip()][:2]
-    if not candidate_queries:
+    # Clean valid queries
+    valid_queries = [q.strip() for q in search_queries if isinstance(q, str) and q.strip()]
+    if not valid_queries:
         return []
 
     if not api_key:
         api_key = get_youtube_api_key()
 
-    target_cap = min(max(1, max_total_results), 8)
-    # If 2 queries, fetch 4 per query; if 1 query, fetch up to 6
-    per_query_limit = 4 if len(candidate_queries) > 1 else min(target_cap, 6)
+    if max_total_results <= 6:
+        # Legacy/test compatibility: use top 2 queries and cap at 8
+        candidate_queries = valid_queries[:2]
+        target_cap = min(max(1, max_total_results), 8)
+        per_query_limit = 4 if len(candidate_queries) > 1 else min(target_cap, 6)
+    else:
+        # Extended discovery: use at most 4 candidate queries to reach target_cap (e.g. 18)
+        candidate_queries = valid_queries[:4]
+        target_cap = max(1, max_total_results)
+        per_query_limit = 10
 
     seen_video_ids = set()
     deduped_videos: List[Dict[str, str]] = []
+    requests_made = 0
 
-    for query in candidate_queries:
+    logger.info(
+        "YouTube discovery starting: target=%d unique songs, candidate_queries=%d",
+        target_cap,
+        len(candidate_queries),
+    )
+
+    for query_num, query in enumerate(candidate_queries, start=1):
+        # Stop immediately if target has already been reached before this query
         if len(deduped_videos) >= target_cap:
+            logger.info(
+                "[YouTube Search] Target of %d unique songs already reached. Skipping Query %d.",
+                target_cap,
+                query_num,
+            )
             break
+
+        remaining_needed = target_cap - len(deduped_videos)
+        if max_total_results <= 6:
+            query_fetch_limit = per_query_limit
+        else:
+            # Request batch to satisfy remaining needed with buffer, capped at 12
+            query_fetch_limit = min(12, max(per_query_limit, remaining_needed))
+
+        requests_made += 1
+        logger.info(
+            "[YouTube Search] Query %d/%d: '%s' (API request #%d, maxResults=%d)",
+            query_num,
+            len(candidate_queries),
+            query,
+            requests_made,
+            query_fetch_limit,
+        )
 
         query_videos = search_youtube_query(
             query=query,
-            max_results=per_query_limit,
+            max_results=query_fetch_limit,
             api_key=api_key,
         )
 
+        new_in_query = 0
         for video in query_videos:
-            vid = video["video_id"]
-            if vid not in seen_video_ids:
+            vid = video.get("video_id")
+            if vid and vid not in seen_video_ids:
                 seen_video_ids.add(vid)
                 deduped_videos.append(video)
+                new_in_query += 1
                 if len(deduped_videos) >= target_cap:
                     break
+
+        logger.info(
+            "[YouTube Search] Query %d results: %d new unique song(s) added (total unique collected: %d/%d)",
+            query_num,
+            new_in_query,
+            len(deduped_videos),
+            target_cap,
+        )
+
+        # Immediately stop searching once the target unique songs are collected
+        if len(deduped_videos) >= target_cap:
+            logger.info(
+                "[YouTube Search] Target reached: collected %d unique songs after %d request(s). STOPPING search (saved %d potential request(s)).",
+                len(deduped_videos),
+                requests_made,
+                max(0, len(candidate_queries) - requests_made),
+            )
+            break
+
+    logger.info(
+        "[YouTube Search] Search complete. Total unique songs: %d, total API requests made: %d",
+        len(deduped_videos),
+        requests_made,
+    )
 
     return deduped_videos

@@ -187,3 +187,34 @@ def test_homepage_renders_session_youtube_results(client):
     assert "Ra Ra Rakkamma" in html
     assert "Sandalwood Hits" in html
     assert "vid_kannada_01" in html
+
+
+@patch("routes.recommendation_routes.search_music_for_recommendation")
+def test_search_music_returns_mood_quotes(mock_search, client):
+    """Test search-music includes mood quotes in JSON response."""
+    mock_search.return_value = SAMPLE_VIDEOS
+    rec_with_quotes = dict(SAMPLE_AI_RECOMMENDATION)
+    rec_with_quotes["mood_quotes"] = ["Serene melodies", "Gentle acoustic vibes"]
+
+    with client.session_transaction() as sess:
+        sess["user_id"] = 1
+        sess["ai_recommendation"] = rec_with_quotes
+
+    res = client.post("/search-music", headers={"X-Requested-With": "XMLHttpRequest"})
+    assert res.status_code == 200
+    data = res.get_json()
+    assert "mood_quotes" in data
+    assert len(data["mood_quotes"]) == 2
+    assert data["mood_quotes"][0] == "Serene melodies"
+
+
+def test_homepage_renders_referrer_policy_and_embed_configuration(client):
+    """Test homepage includes strict-origin referrer meta and embed player host."""
+    res = client.get("/")
+    assert res.status_code == 200
+    html = res.get_data(as_text=True)
+    assert 'meta name="referrer" content="strict-origin-when-cross-origin"' in html
+    assert 'id="ytPlayerHost"' in html
+    assert 'id="moodtunePlayerAnchor"' in html
+    assert 'player.js' in html
+

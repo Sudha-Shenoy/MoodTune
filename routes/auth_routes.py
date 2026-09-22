@@ -1,9 +1,12 @@
 """Authentication routes module for MoodTune."""
+import logging
 import re
 from functools import wraps
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from sqlalchemy.exc import SQLAlchemyError, OperationalError
 from models import db, User
+
+logger = logging.getLogger(__name__)
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -69,12 +72,14 @@ def register():
             flash("Registration successful! Please log in.", "success")
             return redirect(url_for("auth.login"))
 
-        except OperationalError:
+        except OperationalError as exc:
             db.session.rollback()
+            logger.error("Database connection error during registration: %s", exc)
             flash("Database connection error. Please verify your MySQL server is running and DB_PASSWORD in .env is correct.", "error")
             return render_template("register.html", name=name, email=email), 500
-        except SQLAlchemyError:
+        except SQLAlchemyError as exc:
             db.session.rollback()
+            logger.error("SQLAlchemy database error during registration: %s", exc)
             flash("An error occurred while creating your account. Please try again.", "error")
             return render_template("register.html", name=name, email=email), 500
 
@@ -109,10 +114,12 @@ def login():
             flash(f"Welcome back, {user.name}!", "success")
             return redirect(url_for("main.index"))
 
-        except OperationalError:
+        except OperationalError as exc:
+            logger.error("Database connection error during login: %s", exc)
             flash("Database connection error. Please verify your MySQL server is running and DB_PASSWORD in .env is correct.", "error")
             return render_template("login.html", email=email), 500
-        except SQLAlchemyError:
+        except SQLAlchemyError as exc:
+            logger.error("SQLAlchemy database error during login: %s", exc)
             flash("An unexpected error occurred. Please try again.", "error")
             return render_template("login.html", email=email), 500
 

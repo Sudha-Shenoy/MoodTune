@@ -56,7 +56,7 @@ class Config:
     GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY") or os.environ.get("AI_API_KEY", None)
     AI_API_KEY = os.environ.get("AI_API_KEY") or os.environ.get("GEMINI_API_KEY", None)
     AI_PROVIDER = os.environ.get("AI_PROVIDER", "gemini").lower()
-    AI_MODEL = os.environ.get("AI_MODEL", "gemini-flash-lite-latest")
+    AI_MODEL = os.environ.get("AI_MODEL", "gemini-3.5-flash")
     AI_BASE_URL = os.environ.get("AI_BASE_URL", None)
 
     # Future integration placeholders

@@ -158,6 +158,140 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
+    // Mood Artwork and Fallback Quotes System
+    const FALLBACK_QUOTES = {
+        Sad: [
+            "Some melodies understand the silence better than words.",
+            "Let the quiet strings echo the thoughts you cannot speak.",
+            "In the stillness of sound, the heart finds its honest voice.",
+            "A tender melody for the solitary hours of reflection.",
+            "Gentle chords that accompany the rain within.",
+            "Memories drift like gentle notes on an evening breeze.",
+            "Music is the quiet companion of a searching soul.",
+            "When words fall short, the harmony holds the space.",
+            "A soft cadence to soothe a heavy heart.",
+            "Echoes of longing woven into timeless acoustic notes."
+        ],
+        Happy: [
+            "Bright rhythms that instantly lift your spirit to the sky.",
+            "Pure sonic sunshine for a radiant state of mind.",
+            "Let the joy in every chord light up your day.",
+            "An infectious tempo of pure positive vibrations.",
+            "Celebrate the simple happiness of right now.",
+            "Golden melodies that make your soul smile.",
+            "Dance to the bright beat of an uplifting moment.",
+            "Every rhythm brings a fresh spark of optimism.",
+            "A burst of musical sunlight through every melody.",
+            "Joyful chords for an unforgettable, cheerful day."
+        ],
+        Chill: [
+            "Slow down. Let the music carry the weight of the moment.",
+            "Unwind and let the smooth frequencies settle in.",
+            "Soft acoustics for an unhurried, peaceful state of mind.",
+            "Breathe in peace, exhale tension to the tempo.",
+            "Mellow beats for quiet corners and twilight thoughts.",
+            "Let the tempo drift gently like clouds across the sky.",
+            "A calming pulse to ease your thoughts into tranquility.",
+            "Gentle soundscapes for resting your mind.",
+            "Subtle chords designed for late night serenity.",
+            "Peaceful vibrations that turn the noise into calm."
+        ],
+        Romantic: [
+            "Some feelings sound sweeter when they become a melody.",
+            "A heartfelt cadence where every lyric feels intimate.",
+            "Warm acoustic melodies that speak directly to the heart.",
+            "Two souls dancing in harmony with the rhythm.",
+            "A tender frequency designed for romantic evenings.",
+            "Let every chord remind you of a beautiful memory.",
+            "Soft harmonies that whisper what love cannot write.",
+            "A soundtrack for shared glances and gentle warmth.",
+            "Love is a melody that echoes long after the music ends.",
+            "Warm strings and sweet cadences woven with devotion."
+        ],
+        Relaxed: [
+            "Peaceful ambient tones that wash away the day's noise.",
+            "Serenity captured in delicate musical frequencies.",
+            "Calm waves of soothing acoustic harmony.",
+            "Let the soothing rhythm steady your breathing.",
+            "A gentle sanctuary crafted out of quiet notes.",
+            "Rest your mind within the warmth of smooth melodies.",
+            "Stillness made audible through peaceful soundscapes.",
+            "Unclutter your day with soft, tranquil vibrations.",
+            "A mindful interlude of serene relaxation.",
+            "Gentle acoustic warmth that cradles the evening."
+        ],
+        Energetic: [
+            "Feel the electric pulse and let the bass fuel your fire.",
+            "High-octane soundscapes built for unstoppable drive.",
+            "Turn up the volume and charge your spirit with power.",
+            "Unleash pure momentum with every rising beat.",
+            "A rush of adrenaline surging through every track.",
+            "Feel the sonic velocity pushing you forward.",
+            "Electric frequencies designed to ignite your energy.",
+            "Explosive rhythms that demand you move.",
+            "High voltage tempo for peak performance and thrill.",
+            "Unstoppable energy woven into heavy basslines."
+        ],
+        Motivated: [
+            "Every beat is another step forward towards your summit.",
+            "Rise above the doubts with conviction in every note.",
+            "Determination set to an unstoppable, driving rhythm.",
+            "Turn ambition into action with powerful musical cues.",
+            "Focus your mind and conquer the challenge ahead.",
+            "A triumphant anthem for those who refuse to stop.",
+            "Strength and grit distilled into driving percussion.",
+            "Let the melody remind you of the strength you carry.",
+            "Unwavering focus powered by an energetic cadence.",
+            "Your journey, your triumph, scored by epic sound."
+        ],
+        Party: [
+            "Celebrate the night with beats that never stop moving.",
+            "Electrifying rhythms made for losing track of time.",
+            "Turn the room into a festival of pure sound.",
+            "Feel the bass vibrate through the entire dance floor.",
+            "Unfiltered celebration captured in high-tempo grooves.",
+            "Drop the beat and let the good times take over.",
+            "Loud, proud, and unapologetically festive music.",
+            "Non-stop dance energy from the first note to the last.",
+            "A celebration of rhythm, friends, and late night memories.",
+            "Electric party vibes that keep the night alive."
+        ]
+    };
+
+    function getClientFallbackQuotes(mood) {
+        return FALLBACK_QUOTES[mood] || FALLBACK_QUOTES["Chill"];
+    }
+
+    function generateMoodArtwork(mood, index) {
+        const normalizedMood = (mood || "Chill").trim();
+        const moodKey = normalizedMood.toLowerCase();
+        const moodIcons = {
+            sad: "🌧️",
+            happy: "☀️",
+            chill: "🌙",
+            romantic: "✨",
+            relaxed: "🍃",
+            energetic: "⚡",
+            motivated: "🏔️",
+            party: "🎉"
+        };
+        const icon = moodIcons[moodKey] || "🎵";
+
+        return `
+            <div class="mood-artwork-box mood-art-${escapeHTML(moodKey)}" data-mood="${escapeHTML(normalizedMood)}">
+                <span class="mood-art-icon" aria-hidden="true">${icon}</span>
+                <div class="card-now-playing-badge" aria-hidden="true">
+                    <span class="equalizer-bars-mini">
+                        <span class="eq-bar"></span>
+                        <span class="eq-bar"></span>
+                        <span class="eq-bar"></span>
+                        <span class="eq-bar"></span>
+                    </span>
+                </div>
+            </div>
+        `;
+    }
+
     // Helper to safely escape text for HTML insertion
     function escapeHTML(str) {
         const div = document.createElement("div");
@@ -360,38 +494,99 @@ document.addEventListener("DOMContentLoaded", () => {
                     if (youtubeEmptyState) youtubeEmptyState.style.display = "block";
                 } else {
                     if (youtubeEmptyState) youtubeEmptyState.style.display = "none";
+
+                    // Update Mix Hero Banner
+                    const mixHeroTitle = document.getElementById("mixHeroTitle");
+                    if (mixHeroTitle && currentMood && currentLang) {
+                        mixHeroTitle.textContent = `Your ${currentMood} ${currentLang} Mix`;
+                    }
+
+                    const collectionCountPill = document.getElementById("collectionCountPill");
+                    if (collectionCountPill) {
+                        collectionCountPill.textContent = `${videos.length} Songs`;
+                    }
+
+                    const mixHeroCountBadge = document.getElementById("mixHeroCountBadge");
+                    if (mixHeroCountBadge) {
+                        mixHeroCountBadge.textContent = `${videos.length} songs selected for your vibe`;
+                    }
+
+                    // Update AI description and style tags in hero if present
+                    const aiDescTextEl = document.getElementById("aiDescText");
+                    const mixHeroDescTextEl = document.getElementById("mixHeroDescText");
+                    if (mixHeroDescTextEl && aiDescTextEl && aiDescTextEl.textContent.trim()) {
+                        mixHeroDescTextEl.textContent = aiDescTextEl.textContent.trim();
+                    }
+
+                    const aiStylePillsEl = document.getElementById("aiStylePills");
+                    const mixHeroStyleTagsEl = document.getElementById("mixHeroStyleTags");
+                    if (mixHeroStyleTagsEl && aiStylePillsEl) {
+                        const pills = aiStylePillsEl.querySelectorAll(".style-pill");
+                        if (pills.length > 0) {
+                            mixHeroStyleTagsEl.innerHTML = Array.from(pills)
+                                .map((p) => `<span class="mix-style-tag">${escapeHTML(p.textContent.trim())}</span>`)
+                                .join("");
+                        }
+                    }
+
+                    const moodQuotes = (data.mood_quotes && Array.isArray(data.mood_quotes) && data.mood_quotes.length > 0)
+                        ? data.mood_quotes
+                        : getClientFallbackQuotes(currentMood);
+
                     if (youtubeResultsGrid) {
-                        youtubeResultsGrid.innerHTML = videos.map((video) => `
-                            <div class="music-card glass-panel" data-video-id="${escapeHTML(video.video_id)}">
-                                <div class="music-card-thumb-wrap">
-                                    <img src="${escapeHTML(video.thumbnail)}" alt="${escapeHTML(video.title)}" class="music-card-thumb" loading="lazy">
-                                    <div class="music-card-play-overlay" aria-hidden="true">
-                                        <span class="overlay-play-icon">▶</span>
+                        youtubeResultsGrid.innerHTML = videos.map((video, idx) => {
+                            const quote = moodQuotes[idx % moodQuotes.length];
+                            return `
+                                <div class="music-card music-song-row glass-panel" data-video-id="${escapeHTML(video.video_id)}" data-index="${idx}">
+                                    <!-- Mood Artwork (pure CSS/SVG based on mood, no YouTube thumbnail dominating) -->
+                                    <div class="song-row-art-wrap">
+                                        ${generateMoodArtwork(currentMood, idx)}
                                     </div>
-                                </div>
-                                <div class="music-card-body">
-                                    <h3 class="music-card-title" title="${escapeHTML(video.title)}">${escapeHTML(video.title)}</h3>
-                                    <div class="music-card-channel">
-                                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
-                                            <path d="M9 18V5l12-2v13"></path>
-                                            <circle cx="6" cy="18" r="3"></circle>
-                                            <circle cx="18" cy="16" r="3"></circle>
-                                        </svg>
-                                        <span>${escapeHTML(video.channel_title)}</span>
+
+                                    <!-- Song Info & AI Mood Quote -->
+                                    <div class="song-row-info">
+                                        <div class="song-row-title-row">
+                                            <span class="song-row-index">${String(idx + 1).padStart(2, "0")}</span>
+                                            <h4 class="music-card-title song-row-title" title="${escapeHTML(video.title)}">${escapeHTML(video.title)}</h4>
+                                        </div>
+                                        <p class="song-row-quote">“${escapeHTML(quote)}”</p>
+                                        <div class="song-row-meta">
+                                            <span class="song-meta-pill">${escapeHTML(currentLang)} • ${escapeHTML(currentMood)}</span>
+                                            <span class="music-card-channel song-meta-channel">
+                                                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <path d="M9 18V5l12-2v13"></path>
+                                                    <circle cx="6" cy="18" r="3"></circle>
+                                                    <circle cx="18" cy="16" r="3"></circle>
+                                                </svg>
+                                                <span>${escapeHTML(video.channel_title)}</span>
+                                            </span>
+                                        </div>
                                     </div>
-                                    <div class="music-card-actions">
-                                        <a href="${escapeHTML(video.youtube_url)}" target="_blank" rel="noopener noreferrer" class="btn btn-youtube-watch">
+
+                                    <!-- Actions: Primary Play, Secondary Watch on YouTube -->
+                                    <div class="song-row-actions music-card-actions">
+                                        <button type="button" class="btn btn-primary btn-play-song" data-video-id="${escapeHTML(video.video_id)}" data-index="${idx}" aria-label="Play ${escapeHTML(video.title)}">
+                                            <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+                                                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                                            </svg>
+                                            <span class="btn-play-label">Play</span>
+                                        </button>
+                                        <a href="${escapeHTML(video.youtube_url)}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-youtube-watch" aria-label="Watch ${escapeHTML(video.title)} on YouTube" title="Watch on YouTube">
                                             <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
                                                 <polygon points="5 3 19 12 5 21 5 3"></polygon>
                                             </svg>
                                             <span>Watch on YouTube</span>
                                         </a>
-                                        <span class="music-card-ready-badge" title="Ready for playback player in Module 07">Module 07 Ready</span>
                                     </div>
                                 </div>
-                            </div>
-                        `).join("");
-                        youtubeResultsGrid.style.display = "grid";
+                            `;
+                        }).join("");
+                        youtubeResultsGrid.style.display = "flex";
+
+                        // Update Module 07 Music Player queue with fresh songs and mood quotes
+                        if (window.MoodTunePlayer && typeof window.MoodTunePlayer.setQueue === "function") {
+                            window.MoodTunePlayer.setQueue(videos, moodQuotes);
+                        }
                     }
                 }
 

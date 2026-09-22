@@ -147,6 +147,7 @@ def test_search_youtube_query_success(mock_get):
     assert call_kwargs["params"]["q"] == "Kannada happy songs"
     assert call_kwargs["params"]["part"] == "snippet"
     assert call_kwargs["params"]["type"] == "video"
+    assert call_kwargs["params"]["videoEmbeddable"] == "true"
 
 
 @patch("requests.get")
@@ -250,3 +251,93 @@ def test_search_music_for_recommendation_empty_queries():
     assert search_music_for_recommendation([]) == []
     assert search_music_for_recommendation(["", "   "]) == []
     assert search_music_for_recommendation(None) == []
+
+
+@patch("services.youtube_service.search_youtube_query")
+def test_search_music_for_recommendation_target_18(mock_search_query):
+    """Test that search_music_for_recommendation can collect up to 18 songs across queries with early stopping."""
+    def fake_search(query, max_results=10, api_key=None):
+        return [
+            {
+                "video_id": f"{query}_vid_{i}",
+                "title": f"Song {query} {i}",
+                "channel_title": "Artist",
+                "thumbnail": "https://i.ytimg.com/thumb.jpg",
+                "youtube_url": f"https://www.youtube.com/watch?v={query}_vid_{i}",
+            }
+            for i in range(max_results)
+        ]
+
+    mock_search_query.side_effect = fake_search
+    queries = ["Kannada sad melodies", "Kannada emotional hits", "Kannada slow acoustic", "Kannada soulful vibes"]
+    results = search_music_for_recommendation(queries, max_total_results=18, api_key="dummy_key")
+    assert len(results) == 18
+    unique_ids = {r["video_id"] for r in results}
+    assert len(unique_ids) == 18
+    # Quota safety: stopped immediately after 2 queries reached 18 songs
+    assert mock_search_query.call_count == 2
+
+
+@patch("services.youtube_service.search_youtube_query")
+def test_search_music_early_stop_user_example(mock_search_query):
+    """Test exact user scenario: Query 1 (10 unique), Query 2 (8 new), Total 18 -> STOP."""
+    # Query 1 returns 10 unique videos
+    q1_videos = [
+        {"video_id": f"q1_vid_{i}", "title": f"Song 1-{i}", "channel_title": "A", "thumbnail": "", "youtube_url": ""}
+        for i in range(10)
+    ]
+    # Query 2 returns 8 new videos and 2 duplicate videos from Query 1
+    q2_videos = [
+        {"video_id": f"q2_vid_{i}", "title": f"Song 2-{i}", "channel_title": "A", "thumbnail": "", "youtube_url": ""}
+        for i in range(8)
+    ] + [q1_videos[0], q1_videos[1]]
+
+    mock_search_query.side_effect = [q1_videos, q2_videos]
+
+    queries = ["Query 1", "Query 2", "Query 3", "Query 4"]
+    results = search_music_for_recommendation(queries, max_total_results=18, api_key="dummy_key")
+
+    assert len(results) == 18
+    assert mock_search_query.call_count == 2
+    # Ensure Queries 3 and 4 were never called
+    called_queries = [call.kwargs.get("query") or call.args[0] if call.args else call.kwargs.get("query") for call in mock_search_query.call_args_list]
+    assert "Query 3" not in called_queries
+    assert "Query 4" not in called_queries
+
+
+@patch("services.youtube_service.search_youtube_query")
+def test_search_music_no_fabrication_when_under_target(mock_search_query):
+    """Test that if fewer than 18 unique items exist, only real items are returned without fabrication."""
+    mock_search_query.side_effect = [
+        [{"video_id": f"q{q}_vid_{i}", "title": f"S{q}{i}", "channel_title": "A", "thumbnail": "", "youtube_url": ""} for i in range(3)]
+        for q in range(1, 5)
+    ]
+
+    queries = ["Query 1", "Query 2", "Query 3", "Query 4"]
+    results = search_music_for_recommendation(queries, max_total_results=18, api_key="dummy_key")
+
+    # All 4 queries were attempted because 18 was never reached
+    assert mock_search_query.call_count == 4
+    # Returned exactly 12 unique real items without padding or fake IDs
+    assert len(results) == 12
+    video_ids = [r["video_id"] for r in results]
+    assert len(set(video_ids)) == 12
+
+
+@patch("requests.get")
+def test_search_youtube_query_enforces_video_embeddable_and_type(mock_get):
+    """Verify search_youtube_query strictly enforces videoEmbeddable=true and type=video."""
+    mock_response = MagicMock()
+    mock_response.ok = True
+    mock_response.status_code = 200
+    mock_response.json.return_value = {"items": []}
+    mock_get.return_value = mock_response
+
+    search_youtube_query("Sample Query", max_results=5, api_key="dummy_key")
+
+    mock_get.assert_called_once()
+    params = mock_get.call_args[1]["params"]
+    assert params["videoEmbeddable"] == "true"
+    assert params["type"] == "video"
+
+
