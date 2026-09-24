@@ -49,6 +49,34 @@ document.addEventListener("DOMContentLoaded", () => {
     const findMusicBtn = document.getElementById("findMusicBtn");
     const selectionStatusMsg = document.getElementById("selectionStatusMsg");
 
+    function syncMoodUI(selectedMood) {
+        const allCards = document.querySelectorAll(".mood-card[data-mood]");
+        allCards.forEach((c) => {
+            const isMatch = !!(selectedMood && c.dataset.mood && c.dataset.mood.trim().toLowerCase() === selectedMood.trim().toLowerCase());
+            if (isMatch) {
+                c.classList.add("active");
+                c.setAttribute("aria-selected", "true");
+            } else {
+                c.classList.remove("active");
+                c.setAttribute("aria-selected", "false");
+            }
+        });
+    }
+
+    function syncLangUI(selectedLang) {
+        const allPills = document.querySelectorAll(".language-pills .lang-pill, .lang-pill[data-lang]");
+        allPills.forEach((p) => {
+            const isMatch = !!(selectedLang && p.dataset.lang && p.dataset.lang.trim().toLowerCase() === selectedLang.trim().toLowerCase());
+            if (isMatch) {
+                p.classList.add("active");
+                p.setAttribute("aria-selected", "true");
+            } else {
+                p.classList.remove("active");
+                p.setAttribute("aria-selected", "false");
+            }
+        });
+    }
+
     function updateSummaryUI() {
         if (summaryMoodDisplay) {
             summaryMoodDisplay.textContent = currentMood || "None";
@@ -93,8 +121,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const data = await response.json();
             if (response.ok && data.success) {
-                if (data.selected_mood) currentMood = data.selected_mood;
-                if (data.selected_language) currentLang = data.selected_language;
+                if (data.selected_mood) {
+                    currentMood = data.selected_mood;
+                    syncMoodUI(currentMood);
+                }
+                if (data.selected_language) {
+                    currentLang = data.selected_language;
+                    syncLangUI(currentLang);
+                }
                 updateSummaryUI();
                 return true;
             } else {
@@ -107,10 +141,13 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // 4. Mood Card Selection (Authentication Gated)
-    const moodCards = document.querySelectorAll(".mood-card");
+    // 4. Mood Card Selection (Authentication Gated & Strictly Single Selection)
+    const moodCards = document.querySelectorAll(".mood-card[data-mood]");
     moodCards.forEach((card) => {
-        function handleMoodSelect() {
+        function handleMoodSelect(e) {
+            if (e && e.type === "keydown") {
+                e.preventDefault();
+            }
             if (!isAuthenticated) {
                 openAuthModal();
                 return;
@@ -120,9 +157,8 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!mood) return;
 
             // Single mood selection
-            moodCards.forEach((c) => c.classList.remove("active"));
-            card.classList.add("active");
             currentMood = mood;
+            syncMoodUI(currentMood);
             updateSummaryUI();
             sendPreferences({ mood: mood });
         }
@@ -131,16 +167,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
         card.addEventListener("keydown", (event) => {
             if (event.key === "Enter" || event.key === " ") {
-                event.preventDefault();
-                handleMoodSelect();
+                handleMoodSelect(event);
             }
         });
     });
 
-    // 5. Language Pill Selection (Authentication Gated)
-    const langPills = document.querySelectorAll(".lang-pill");
+    // 5. Language Pill Selection (Authentication Gated & Strictly Single Selection)
+    const langPills = document.querySelectorAll(".language-pills .lang-pill, .lang-pill[data-lang]");
     langPills.forEach((pill) => {
-        pill.addEventListener("click", () => {
+        function handleLanguageSelect(e) {
+            if (e && e.type === "keydown") {
+                e.preventDefault();
+            }
             if (!isAuthenticated) {
                 openAuthModal();
                 return;
@@ -150,13 +188,24 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!lang) return;
 
             // Single language selection
-            langPills.forEach((p) => p.classList.remove("active"));
-            pill.classList.add("active");
             currentLang = lang;
+            syncLangUI(currentLang);
             updateSummaryUI();
             sendPreferences({ language: lang });
+        }
+
+        pill.addEventListener("click", handleLanguageSelect);
+
+        pill.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+                handleLanguageSelect(event);
+            }
         });
     });
+
+    // Initial DOM Sync for Mood and Language Selection
+    syncMoodUI(currentMood);
+    syncLangUI(currentLang);
 
     // Mood Artwork and Fallback Quotes System
     const FALLBACK_QUOTES = {
@@ -537,7 +586,13 @@ document.addEventListener("DOMContentLoaded", () => {
                         youtubeResultsGrid.innerHTML = videos.map((video, idx) => {
                             const quote = moodQuotes[idx % moodQuotes.length];
                             return `
-                                <div class="music-card music-song-row glass-panel" data-video-id="${escapeHTML(video.video_id)}" data-index="${idx}">
+                                <div class="music-card music-song-row glass-panel" 
+                                     data-video-id="${escapeHTML(video.video_id)}" 
+                                     data-index="${idx}"
+                                     data-title="${escapeHTML(video.title)}"
+                                     data-channel-title="${escapeHTML(video.channel_title)}"
+                                     data-thumbnail="${escapeHTML(video.thumbnail || '')}"
+                                     data-youtube-url="${escapeHTML(video.youtube_url)}">
                                     <!-- Mood Artwork (pure CSS/SVG based on mood, no YouTube thumbnail dominating) -->
                                     <div class="song-row-art-wrap">
                                         ${generateMoodArtwork(currentMood, idx)}
@@ -563,7 +618,7 @@ document.addEventListener("DOMContentLoaded", () => {
                                         </div>
                                     </div>
 
-                                    <!-- Actions: Primary Play, Secondary Watch on YouTube -->
+                                    <!-- Actions: Primary Play, Add to Playlist, Secondary Watch on YouTube -->
                                     <div class="song-row-actions music-card-actions">
                                         <button type="button" class="btn btn-primary btn-play-song" data-video-id="${escapeHTML(video.video_id)}" data-index="${idx}" aria-label="Play ${escapeHTML(video.title)}">
                                             <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
@@ -571,11 +626,24 @@ document.addEventListener("DOMContentLoaded", () => {
                                             </svg>
                                             <span class="btn-play-label">Play</span>
                                         </button>
+                                        <button type="button" class="btn btn-secondary btn-add-to-playlist" 
+                                                data-video-id="${escapeHTML(video.video_id)}" 
+                                                data-title="${escapeHTML(video.title)}" 
+                                                data-channel-title="${escapeHTML(video.channel_title)}" 
+                                                data-thumbnail="${escapeHTML(video.thumbnail || '')}" 
+                                                data-youtube-url="${escapeHTML(video.youtube_url)}" 
+                                                aria-label="Add ${escapeHTML(video.title)} to playlist" title="Add to playlist">
+                                            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                                            </svg>
+                                            <span>+ Playlist</span>
+                                        </button>
                                         <a href="${escapeHTML(video.youtube_url)}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-youtube-watch" aria-label="Watch ${escapeHTML(video.title)} on YouTube" title="Watch on YouTube">
                                             <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
                                                 <polygon points="5 3 19 12 5 21 5 3"></polygon>
                                             </svg>
-                                            <span>Watch on YouTube</span>
+                                            <span>Watch</span>
                                         </a>
                                     </div>
                                 </div>
@@ -601,6 +669,289 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (btnSpan) btnSpan.textContent = originalBtnText;
             } finally {
                 exploreMusicBtn.removeAttribute("disabled");
+            }
+        });
+    }
+
+    // 7b. Manual YouTube Music Search (Module 08 Part B)
+    const manualSearchForm = document.getElementById("manualSearchForm");
+    const manualSearchInput = document.getElementById("manualSearchInput");
+    const manualSearchClearBtn = document.getElementById("manualSearchClearBtn");
+    const manualSearchBtn = document.getElementById("manualSearchBtn");
+    const manualSearchError = document.getElementById("manualSearchError");
+
+    if (manualSearchInput && manualSearchClearBtn) {
+        // Toggle clear button on input
+        manualSearchInput.addEventListener("input", () => {
+            if (manualSearchInput.value.trim().length > 0) {
+                manualSearchClearBtn.style.display = "flex";
+            } else {
+                manualSearchClearBtn.style.display = "none";
+            }
+            if (manualSearchError) manualSearchError.style.display = "none";
+        });
+
+        manualSearchClearBtn.addEventListener("click", () => {
+            manualSearchInput.value = "";
+            manualSearchClearBtn.style.display = "none";
+            if (manualSearchError) manualSearchError.style.display = "none";
+            manualSearchInput.focus();
+        });
+    }
+
+    function scrollToSearchResults() {
+        const target = document.getElementById("searchResultsSection") ||
+                       document.getElementById("moodtuneMixHero") ||
+                       document.getElementById("youtubeResultsSection");
+        if (target) {
+            target.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+    }
+
+    if (manualSearchForm && manualSearchInput) {
+        manualSearchForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const query = manualSearchInput.value.trim();
+
+            if (!query) {
+                if (manualSearchError) {
+                    manualSearchError.textContent = "Please enter a song, artist, or music keyword to search.";
+                    manualSearchError.style.display = "block";
+                }
+                manualSearchInput.focus();
+                return;
+            }
+
+            if (query.length > 100) {
+                if (manualSearchError) {
+                    manualSearchError.textContent = "Search query is too long. Please keep it under 100 characters.";
+                    manualSearchError.style.display = "block";
+                }
+                return;
+            }
+
+            if (manualSearchError) manualSearchError.style.display = "none";
+
+            // Set loading state on search button
+            const btnSpan = manualSearchBtn ? manualSearchBtn.querySelector("span") : null;
+            const originalBtnText = btnSpan ? btnSpan.textContent : "Search";
+            if (btnSpan) btnSpan.textContent = "Searching...";
+            if (manualSearchBtn) manualSearchBtn.setAttribute("disabled", "true");
+
+            // Reveal discovery section and show loading state
+            if (youtubeResultsSection) youtubeResultsSection.style.display = "block";
+            if (youtubeLoadingIndicator) youtubeLoadingIndicator.style.display = "block";
+            if (youtubeErrorBanner) youtubeErrorBanner.style.display = "none";
+            if (youtubeEmptyState) youtubeEmptyState.style.display = "none";
+
+            // Smooth scroll to loading indicator or search section
+            if (youtubeLoadingIndicator) {
+                youtubeLoadingIndicator.scrollIntoView({ behavior: "smooth", block: "start" });
+            } else {
+                scrollToSearchResults();
+            }
+
+            try {
+                const response = await fetch("/search-music", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-Requested-With": "XMLHttpRequest"
+                    },
+                    body: JSON.stringify({ query: query })
+                });
+
+                if (response.status === 401) {
+                    if (youtubeLoadingIndicator) youtubeLoadingIndicator.style.display = "none";
+                    openAuthModal();
+                    return;
+                }
+
+                const data = await response.json();
+
+                if (youtubeLoadingIndicator) {
+                    youtubeLoadingIndicator.style.display = "none";
+                }
+
+                if (!response.ok || !data.success) {
+                    const errorMsg = data.error || "MoodTune couldn't complete your search right now. Please try again.";
+                    if (youtubeErrorText) youtubeErrorText.textContent = errorMsg;
+                    if (youtubeErrorBanner) {
+                        youtubeErrorBanner.style.display = "flex";
+                        requestAnimationFrame(() => {
+                            youtubeErrorBanner.scrollIntoView({ behavior: "smooth", block: "start" });
+                        });
+                    }
+                    return;
+                }
+
+                const videos = data.videos || [];
+
+                // Update Mix Hero Banner for Manual Search
+                const mixHeroTitle = document.getElementById("mixHeroTitle");
+                if (mixHeroTitle) {
+                    mixHeroTitle.textContent = `Search Results for "${query}"`;
+                }
+
+                const mixHeroDescTextEl = document.getElementById("mixHeroDescText");
+                if (mixHeroDescTextEl) {
+                    mixHeroDescTextEl.textContent = `Tracks found on YouTube Music for "${query}".`;
+                }
+
+                const mixHeroBadgeText = document.getElementById("mixHeroBadgeText");
+                if (mixHeroBadgeText) {
+                    const spanEl = mixHeroBadgeText.querySelector("span:last-child");
+                    if (spanEl) spanEl.textContent = "SEARCH RESULTS";
+                }
+
+                const mixPicksCompatBadge = document.getElementById("mixPicksCompatBadge");
+                if (mixPicksCompatBadge) {
+                    mixPicksCompatBadge.textContent = "YouTube Music Search";
+                }
+
+                const mixHeroCountBadge = document.getElementById("mixHeroCountBadge");
+                if (mixHeroCountBadge) {
+                    mixHeroCountBadge.textContent = `${videos.length} songs found`;
+                }
+
+                const collectionCountPill = document.getElementById("collectionCountPill");
+                if (collectionCountPill) {
+                    collectionCountPill.textContent = `${videos.length} Songs`;
+                }
+
+                const discoveryGridTitle = document.getElementById("discoveryGridTitle");
+                if (discoveryGridTitle) {
+                    discoveryGridTitle.textContent = "SEARCH RESULTS";
+                }
+
+                const discoveryVibeBadge = document.getElementById("discoveryVibeBadge");
+                if (discoveryVibeBadge) {
+                    discoveryVibeBadge.textContent = "SEARCH";
+                }
+
+                const discoveryPicksBadge = document.getElementById("discoveryPicksBadge");
+                if (discoveryPicksBadge) {
+                    discoveryPicksBadge.textContent = "YouTube Music Results";
+                }
+
+                const youtubeResultsSubtitle = document.getElementById("youtubeResultsSubtitle");
+                if (youtubeResultsSubtitle) {
+                    youtubeResultsSubtitle.textContent = `Direct search results for "${query}"`;
+                }
+
+                if (videos.length === 0) {
+                    if (youtubeResultsGrid) {
+                        youtubeResultsGrid.innerHTML = "";
+                        youtubeResultsGrid.style.display = "none";
+                    }
+                    if (youtubeEmptyState) {
+                        youtubeEmptyState.style.display = "block";
+                        requestAnimationFrame(() => {
+                            youtubeEmptyState.scrollIntoView({ behavior: "smooth", block: "start" });
+                        });
+                    } else {
+                        scrollToSearchResults();
+                    }
+                } else {
+                    if (youtubeEmptyState) youtubeEmptyState.style.display = "none";
+
+                    if (youtubeResultsGrid) {
+                        youtubeResultsGrid.innerHTML = videos.map((video, idx) => `
+                            <div class="music-card music-song-row glass-panel" 
+                                 data-video-id="${escapeHTML(video.video_id)}" 
+                                 data-index="${idx}"
+                                 data-title="${escapeHTML(video.title)}"
+                                 data-channel-title="${escapeHTML(video.channel_title)}"
+                                 data-thumbnail="${escapeHTML(video.thumbnail || '')}"
+                                 data-youtube-url="${escapeHTML(video.youtube_url)}">
+                                <div class="song-row-art-wrap">
+                                    <div class="mood-artwork-box mood-art-chill" data-mood="Music">
+                                        <span class="mood-art-icon" aria-hidden="true">🎵</span>
+                                        <div class="card-now-playing-badge" aria-hidden="true">
+                                            <span class="equalizer-bars-mini">
+                                                <span class="eq-bar"></span>
+                                                <span class="eq-bar"></span>
+                                                <span class="eq-bar"></span>
+                                                <span class="eq-bar"></span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="song-row-info">
+                                    <div class="song-row-title-row">
+                                        <span class="song-row-index">${String(idx + 1).padStart(2, "0")}</span>
+                                        <h4 class="music-card-title song-row-title" title="${escapeHTML(video.title)}">${escapeHTML(video.title)}</h4>
+                                    </div>
+                                    <div class="song-row-meta">
+                                        <span class="song-meta-pill">Search Result</span>
+                                        <span class="music-card-channel song-meta-channel">
+                                            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M9 18V5l12-2v13"></path>
+                                                <circle cx="6" cy="18" r="3"></circle>
+                                                <circle cx="18" cy="16" r="3"></circle>
+                                            </svg>
+                                            <span>${escapeHTML(video.channel_title)}</span>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="song-row-actions music-card-actions">
+                                    <button type="button" class="btn btn-primary btn-play-song" data-video-id="${escapeHTML(video.video_id)}" data-index="${idx}" aria-label="Play ${escapeHTML(video.title)}">
+                                        <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+                                            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                                        </svg>
+                                        <span class="btn-play-label">Play</span>
+                                    </button>
+                                    <button type="button" class="btn btn-secondary btn-add-to-playlist" 
+                                            data-video-id="${escapeHTML(video.video_id)}" 
+                                            data-title="${escapeHTML(video.title)}" 
+                                            data-channel-title="${escapeHTML(video.channel_title)}" 
+                                            data-thumbnail="${escapeHTML(video.thumbnail || '')}" 
+                                            data-youtube-url="${escapeHTML(video.youtube_url)}" 
+                                            aria-label="Add ${escapeHTML(video.title)} to playlist" title="Add to playlist">
+                                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                                        </svg>
+                                        <span>+ Playlist</span>
+                                    </button>
+                                    <a href="${escapeHTML(video.youtube_url)}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-youtube-watch" aria-label="Watch ${escapeHTML(video.title)} on YouTube" title="Watch on YouTube">
+                                        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                                            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                                        </svg>
+                                        <span>Watch</span>
+                                    </a>
+                                </div>
+                            </div>
+                        `).join("");
+                        youtubeResultsGrid.style.display = "flex";
+
+                        // Update Module 07 Music Player queue with fresh search results
+                        if (window.MoodTunePlayer && typeof window.MoodTunePlayer.setQueue === "function") {
+                            window.MoodTunePlayer.setQueue(videos);
+                        }
+
+                        // Auto-scroll to search results after rendering
+                        requestAnimationFrame(() => {
+                            scrollToSearchResults();
+                        });
+                    }
+                }
+            } catch (err) {
+                console.error("Error in manual YouTube search:", err);
+                if (youtubeLoadingIndicator) youtubeLoadingIndicator.style.display = "none";
+                if (youtubeErrorText) {
+                    youtubeErrorText.textContent = "Network connection failed. Please check your connection and try again.";
+                }
+                if (youtubeErrorBanner) {
+                    youtubeErrorBanner.style.display = "flex";
+                    requestAnimationFrame(() => {
+                        youtubeErrorBanner.scrollIntoView({ behavior: "smooth", block: "start" });
+                    });
+                }
+            } finally {
+                if (manualSearchBtn) manualSearchBtn.removeAttribute("disabled");
+                if (btnSpan) btnSpan.textContent = originalBtnText;
             }
         });
     }
@@ -668,6 +1019,17 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
     });
+
+    // 10. Auto-scroll on initial page load if search query was submitted via standard GET
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has("q") || urlParams.has("query")) {
+        const resultsSection = document.getElementById("youtubeResultsSection");
+        if (resultsSection && resultsSection.style.display !== "none") {
+            setTimeout(() => {
+                scrollToSearchResults();
+            }, 150);
+        }
+    }
 
     // Initialize summary UI state on page load
     updateSummaryUI();

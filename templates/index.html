@@ -470,8 +470,52 @@
     </div>
 </section>
 
+<!-- Manual Music Search Section (Module 08) -->
+<section class="section-container manual-search-section" id="manualSearchSection">
+    <div class="manual-search-container glass-panel">
+        <div class="manual-search-header text-center">
+            <span class="section-badge">Direct Music Search</span>
+            <h2 class="manual-search-title">Looking for something specific?</h2>
+            <p class="manual-search-subtitle">Search for any song, artist, album, or genre directly on YouTube Music.</p>
+        </div>
+        <form class="manual-search-form" id="manualSearchForm" action="{{ url_for('recommendation.search_music') }}" method="GET">
+            <div class="manual-search-input-wrapper">
+                <span class="manual-search-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                </span>
+                <input type="text" 
+                       class="manual-search-input" 
+                       id="manualSearchInput" 
+                       name="q" 
+                       placeholder="Search songs, artists, or genres..." 
+                       value="{{ search_query or '' }}" 
+                       autocomplete="off" 
+                       required>
+                <button type="button" class="manual-search-clear-btn" id="manualSearchClearBtn" aria-label="Clear search input" style="display: none;">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+                <button type="submit" class="btn btn-primary manual-search-btn" id="manualSearchBtn">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <span>Search</span>
+                </button>
+            </div>
+            <div class="manual-search-error" id="manualSearchError" style="display: none;"></div>
+        </form>
+    </div>
+</section>
+
 <!-- 3. MoodTune Music Discovery Mix & Player Experience (Module 07) -->
 <section class="section-container moodtune-discovery-section" id="youtubeResultsSection" {% if not youtube_results %}style="display: none;"{% endif %}>
+    <div id="searchResultsSection" class="search-results-anchor" aria-hidden="true"></div>
     <!-- Discovery Mix Hero Banner -->
     <div class="mix-hero-card glass-panel" id="moodtuneMixHero">
         <div class="mix-hero-glow" aria-hidden="true"></div>
@@ -489,17 +533,19 @@
             </div>
             <div class="mix-hero-details">
                 <div class="mix-badges-row">
-                    <span class="mix-hero-badge">
+                    <span class="mix-hero-badge" id="mixHeroBadgeText">
                         <span class="badge-sparkle">✦</span>
-                        <span>YOUR MOODTUNE MIX</span>
+                        <span>{{ 'SEARCH RESULTS' if search_query else 'YOUR MOODTUNE MIX' }}</span>
                     </span>
-                    <span class="mix-picks-badge" id="mixPicksCompatBadge">Your MoodTune Picks</span>
+                    <span class="mix-picks-badge" id="mixPicksCompatBadge">{{ 'YouTube Music Search' if search_query else 'Your MoodTune Picks' }}</span>
                     <span class="mix-count-badge" id="mixHeroCountBadge">
-                        {{ youtube_results|length if youtube_results else 0 }} songs selected for your vibe
+                        {{ youtube_results|length if youtube_results else 0 }} songs found
                     </span>
                 </div>
                 <h2 class="mix-hero-title" id="mixHeroTitle">
-                    {% if session.get('selected_mood') and session.get('selected_language') %}
+                    {% if search_query %}
+                        Search Results for "{{ search_query }}"
+                    {% elif session.get('selected_mood') and session.get('selected_language') %}
                         Your {{ session.get('selected_mood') }} {{ session.get('selected_language') }} Mix
                     {% else %}
                         Your MoodTune Mix
@@ -507,7 +553,9 @@
                 </h2>
                 <!-- AI Narrative Quote from Module 05 -->
                 <p class="mix-hero-description" id="mixHeroDescText">
-                    {% if ai_recommendation and ai_recommendation.description %}
+                    {% if search_query %}
+                        Tracks retrieved for your search query.
+                    {% elif ai_recommendation and ai_recommendation.description %}
                         {{ ai_recommendation.description }}
                     {% else %}
                         Curated tracks matching your AI-analyzed musical frequency and soundscape.
@@ -702,12 +750,16 @@
     <div class="discovery-grid-header">
         <div class="discovery-header-left">
             <div class="discovery-badge-row">
-                <span class="discovery-vibe-badge">DISCOVERY</span>
-                <span class="mix-picks-badge-secondary">Your MoodTune Picks</span>
+                <span class="discovery-vibe-badge" id="discoveryVibeBadge">{{ 'SEARCH' if search_query else 'DISCOVERY' }}</span>
+                <span class="mix-picks-badge-secondary" id="discoveryPicksBadge">{{ 'YouTube Music Results' if search_query else 'Your MoodTune Picks' }}</span>
             </div>
-            <h3 class="discovery-grid-title">YOUR VIBE</h3>
+            <h3 class="discovery-grid-title" id="discoveryGridTitle">{{ 'SEARCH RESULTS' if search_query else 'YOUR VIBE' }}</h3>
             <p class="discovery-grid-subtitle" id="youtubeResultsSubtitle">
-                Songs selected for your mood and language
+                {% if search_query %}
+                    Direct search results from YouTube Music
+                {% else %}
+                    Songs selected for your mood and language
+                {% endif %}
             </p>
         </div>
         <div class="discovery-header-right">
@@ -721,7 +773,13 @@
     <div class="youtube-results-grid moodtune-song-list" id="youtubeResultsGrid">
         {% if youtube_results %}
             {% for video in youtube_results %}
-                <div class="music-card music-song-row glass-panel" data-video-id="{{ video.video_id }}" data-index="{{ loop.index0 }}">
+                <div class="music-card music-song-row glass-panel" 
+                     data-video-id="{{ video.video_id }}" 
+                     data-index="{{ loop.index0 }}"
+                     data-title="{{ video.title }}"
+                     data-channel-title="{{ video.channel_title }}"
+                     data-thumbnail="{{ video.thumbnail }}"
+                     data-youtube-url="{{ video.youtube_url }}">
                     <!-- Mood Artwork (pure CSS/SVG based on mood, no YouTube thumbnail dominating) -->
                     <div class="song-row-art-wrap">
                         <div class="mood-artwork-box mood-art-{{ session.get('selected_mood')|lower if session.get('selected_mood') else 'chill' }}" data-mood="{{ session.get('selected_mood') or 'Chill' }}">
@@ -759,7 +817,7 @@
                         </div>
                     </div>
 
-                    <!-- Actions: Primary Play, Secondary Watch on YouTube -->
+                    <!-- Actions: Primary Play, Add to Playlist, Secondary Watch on YouTube -->
                     <div class="song-row-actions music-card-actions">
                         <button type="button" class="btn btn-primary btn-play-song" data-video-id="{{ video.video_id }}" data-index="{{ loop.index0 }}" aria-label="Play {{ video.title }}">
                             <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
@@ -767,11 +825,24 @@
                             </svg>
                             <span class="btn-play-label">Play</span>
                         </button>
+                        <button type="button" class="btn btn-secondary btn-add-to-playlist" 
+                                data-video-id="{{ video.video_id }}" 
+                                data-title="{{ video.title }}" 
+                                data-channel-title="{{ video.channel_title }}" 
+                                data-thumbnail="{{ video.thumbnail }}" 
+                                data-youtube-url="{{ video.youtube_url }}" 
+                                aria-label="Add {{ video.title }} to playlist" title="Add to playlist">
+                            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            <span>+ Playlist</span>
+                        </button>
                         <a href="{{ video.youtube_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-youtube-watch" aria-label="Watch {{ video.title }} on YouTube" title="Watch on YouTube">
                             <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
                                 <polygon points="5 3 19 12 5 21 5 3"></polygon>
                             </svg>
-                            <span>Watch on YouTube</span>
+                            <span>Watch</span>
                         </a>
                     </div>
                 </div>
@@ -897,7 +968,7 @@
                         <span class="ai-core-label">AI ENGINE</span>
                     </div>
                     <div class="ai-flow-line"></div>
-                    <div class="ai-input-pill lang-pill">Language: Kannada</div>
+                    <div class="ai-input-pill ai-lang-pill">Language: Kannada</div>
                 </div>
                 <div class="ai-output-preview">
                     <span class="output-label">Generated Soundscape:</span>

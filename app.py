@@ -6,6 +6,7 @@ from models import db
 from routes.main_routes import main_bp
 from routes.auth_routes import auth_bp
 from routes.recommendation_routes import recommendation_bp
+from routes.playlist_routes import playlist_bp
 
 
 def create_app(config_class=Config):
@@ -20,6 +21,7 @@ def create_app(config_class=Config):
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(recommendation_bp)
+    app.register_blueprint(playlist_bp)
 
     # CLI command for table creation
     @app.cli.command("init-db")

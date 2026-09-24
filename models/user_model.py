@@ -19,6 +19,15 @@ class User(db.Model):
         default=lambda: datetime.now(timezone.utc)
     )
 
+    # User's playlists (cascade deletes playlists when user account is deleted)
+    playlists = db.relationship(
+        "Playlist",
+        backref="user",
+        lazy="select",
+        cascade="all, delete-orphan",
+        order_by="Playlist.created_at.desc()"
+    )
+
     def set_password(self, password: str) -> None:
         """Hash and set user password."""
         self.password_hash = generate_password_hash(password)

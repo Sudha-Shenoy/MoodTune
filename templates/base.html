@@ -35,11 +35,15 @@
                 <a href="{{ url_for('main.index') }}" class="nav-link">Home</a>
                 <a href="{{ url_for('main.index') }}#moods" class="nav-link">Discover</a>
                 <a href="{{ url_for('main.index') }}#how-it-works" class="nav-link">How It Works</a>
+                {% if session.get('user_id') %}
+                <a href="{{ url_for('playlist.list_playlists') }}" class="nav-link">Playlists</a>
+                {% endif %}
                 
                 <!-- Mobile Navigation Auth State -->
                 <div class="nav-auth-mobile">
                     {% if session.get('user_id') %}
                         <span class="user-greeting-mobile">Hi, <strong>{{ session.get('user_name') }}</strong></span>
+                        <a href="{{ url_for('playlist.list_playlists') }}" class="btn btn-secondary btn-sm" style="margin-right: 0.5rem;">Playlists</a>
                         <a href="{{ url_for('auth.logout') }}" class="btn btn-secondary btn-sm">Logout</a>
                     {% else %}
                         <a href="{{ url_for('auth.login') }}" class="btn btn-ghost">Login</a>
@@ -87,6 +91,58 @@
         {% block content %}{% endblock %}
     </main>
 
+    {% if session.get('user_id') %}
+    <!-- Global Modal: Add Song to Playlist -->
+    <div class="playlist-modal-overlay" id="addToPlaylistModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="addToPlaylistModalTitle">
+        <div class="playlist-modal-backdrop" id="addToPlaylistModalBackdrop"></div>
+        <div class="playlist-modal-card glass-panel" role="document">
+            <button type="button" class="playlist-modal-close" id="addToPlaylistCloseBtn" aria-label="Close modal">×</button>
+            <div class="playlist-modal-header text-center">
+                <span class="playlist-modal-badge">Add to Playlist</span>
+                <h3 class="playlist-modal-title" id="addToPlaylistModalTitle">Save to Playlist</h3>
+                <p class="playlist-modal-desc" id="addToPlaylistSongInfo">Choose a playlist to save this track.</p>
+            </div>
+            
+            <!-- Target Song Preview -->
+            <div class="target-song-preview" id="targetSongPreview">
+                <span class="preview-art-icon">🎵</span>
+                <div class="preview-meta">
+                    <h4 class="preview-title" id="modalSongTitle">Song Title</h4>
+                    <p class="preview-artist" id="modalSongArtist">Artist / Channel</p>
+                </div>
+            </div>
+
+            <div class="playlist-selection-area">
+                <div class="playlist-picker-header">
+                    <span class="picker-label">Select Playlist:</span>
+                </div>
+                <div class="playlist-options-list" id="playlistOptionsList">
+                    <div class="playlist-loading-spinner" id="playlistPickerLoading">Loading your playlists...</div>
+                </div>
+            </div>
+
+            <!-- Quick Create Section inside Add Modal -->
+            <div class="quick-create-section">
+                <div class="quick-create-divider">
+                    <span>or create new playlist</span>
+                </div>
+                <div class="quick-create-group">
+                    <input type="text" class="form-input form-input-sm" id="quickPlaylistNameInput" placeholder="New playlist name..." maxlength="100" autocomplete="off">
+                    <button type="button" class="btn btn-secondary btn-sm" id="quickCreatePlaylistBtn">
+                        <span>Create &amp; Add</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="modal-feedback-msg" id="addToPlaylistFeedback" style="display: none;"></div>
+
+            <div class="playlist-modal-actions">
+                <button type="button" class="btn btn-secondary" id="closeAddToPlaylistBtn">Done</button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Footer -->
     <footer class="site-footer">
         <div class="footer-container">
@@ -111,6 +167,9 @@
                         <li><a href="{{ url_for('main.index') }}">Home</a></li>
                         <li><a href="{{ url_for('main.index') }}#moods">Discover</a></li>
                         <li><a href="{{ url_for('main.index') }}#how-it-works">How It Works</a></li>
+                        {% if session.get('user_id') %}
+                        <li><a href="{{ url_for('playlist.list_playlists') }}">Playlists</a></li>
+                        {% endif %}
                         <li><a href="#about">About</a></li>
                     </ul>
                 </div>
@@ -137,7 +196,8 @@
     </footer>
 
     <!-- Main JavaScript (with cache busting) -->
-    <script src="{{ url_for('static', filename='js/main.js', v='7') }}"></script>
+    <script src="{{ url_for('static', filename='js/main.js', v='8') }}"></script>
     <script src="{{ url_for('static', filename='js/player.js', v='3') }}"></script>
+    <script src="{{ url_for('static', filename='js/playlist.js', v='1') }}"></script>
 </body>
 </html>

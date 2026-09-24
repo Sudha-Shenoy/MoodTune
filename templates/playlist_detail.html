@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+
+{% block title %}{{ playlist.name }} – MoodTune Playlist{% endblock %}
+
+{% block content %}
+<div class="playlist-detail-container">
+    <!-- Breadcrumb -->
+    <div class="playlist-breadcrumb">
+        <a href="{{ url_for('playlist.list_playlists') }}" class="breadcrumb-back-link">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            <span>All Playlists</span>
+        </a>
+    </div>
+
+    <!-- Playlist Detail Hero -->
+    <div class="playlist-detail-hero glass-panel">
+        <div class="playlist-detail-hero-content">
+            <div class="playlist-hero-art">
+                <span class="playlist-hero-icon">🎵</span>
+            </div>
+            <div class="playlist-hero-info">
+                <div class="playlist-hero-badges">
+                    <span class="playlist-badge">PLAYLIST</span>
+                    <span class="playlist-count-pill" id="detailSongCountPill">{{ playlist.song_count }} {{ 'Song' if playlist.song_count == 1 else 'Songs' }}</span>
+                </div>
+                <h1 class="playlist-detail-title" id="playlistTitleText">{{ playlist.name }}</h1>
+                <p class="playlist-detail-meta">
+                    Created {{ playlist.created_at.strftime('%B %d, %Y') if playlist.created_at else 'recently' }} • Saved Tracks
+                </p>
+                <div class="playlist-hero-actions">
+                    {% if playlist.song_count > 0 %}
+                        <button type="button" class="btn btn-primary btn-play-all-playlist" data-playlist-id="{{ playlist.id }}" id="detailPlayAllBtn">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                            </svg>
+                            <span>Play All</span>
+                        </button>
+                    {% endif %}
+                    <button type="button" class="btn btn-ghost btn-delete-playlist-trigger" data-playlist-id="{{ playlist.id }}" data-playlist-name="{{ playlist.name }}" title="Delete this playlist">
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                        <span>Delete Playlist</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Persistent Music Player Anchor for Playlist Playback (Module 07 Integration) -->
+    <div id="moodtunePlayerAnchor" class="now-playing-anchor" style="margin-bottom: 2rem;">
+        <div class="moodtune-now-playing glass-panel" id="moodtuneNowPlaying" style="display: none;" role="region" aria-label="Now Playing Player">
+            <div class="now-playing-container">
+                <div class="now-playing-visual-col">
+                    <div class="yt-player-contained" id="ytPlayerWrapper">
+                        <div id="ytPlayerHost"></div>
+                    </div>
+                </div>
+                <div class="now-playing-info-col">
+                    <div class="now-playing-top-bar">
+                        <div class="now-playing-badge-wrap">
+                            <span class="now-playing-status-badge" id="nowPlayingStatusBadge">
+                                <div class="soundwave-bars" id="nowPlayingSoundwave" aria-hidden="true">
+                                    <span class="soundwave-bar"></span>
+                                    <span class="soundwave-bar"></span>
+                                    <span class="soundwave-bar"></span>
+                                </div>
+                                <span id="nowPlayingStatusText">NOW PLAYING</span>
+                            </span>
+                            <span class="now-playing-mood-badge" id="nowPlayingMoodBadge">PLAYLIST</span>
+                        </div>
+                        <div class="now-playing-header-actions">
+                            <button type="button" class="btn-player-action" id="playerQueueToggleBtn" aria-label="Toggle Up Next Queue">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                                    <path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h10v2H4z"></path>
+                                </svg>
+                                <span class="queue-btn-label">Queue</span>
+                                <span class="queue-count-badge" id="queueCountBadge">0</span>
+                            </button>
+                            <button type="button" class="btn-player-action" id="playerMinimizeBtn" aria-label="Minimize Player">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                            </button>
+                            <button type="button" class="btn-player-action" id="playerExpandBtn" style="display: none;" aria-label="Expand Player">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                                    <polyline points="15 3 21 3 21 9"></polyline>
+                                    <polyline points="9 21 3 21 3 15"></polyline>
+                                </svg>
+                            </button>
+                            <button type="button" class="btn-player-action" id="playerCloseBtn" aria-label="Close Player">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="now-playing-track-meta">
+                        <h3 class="now-playing-title" id="nowPlayingTitle">Song Title</h3>
+                        <p class="now-playing-channel" id="nowPlayingChannel">Channel / Artist</p>
+                        <p class="now-playing-quote" id="nowPlayingQuote" style="display: none;"></p>
+                    </div>
+
+                    <div class="now-playing-controls-row">
+                        <button type="button" class="player-ctrl-btn" id="playerPrevBtn" aria-label="Previous Track">
+                            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                                <polygon points="19 20 9 12 19 4 19 20"></polygon>
+                                <line x1="5" y1="19" x2="5" y2="5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"></line>
+                            </svg>
+                        </button>
+                        <button type="button" class="player-main-play-btn" id="playerPlayPauseBtn" aria-label="Play or Pause">
+                            <svg class="player-play-icon" viewBox="0 0 24 24" width="26" height="26" fill="currentColor">
+                                <polygon points="6 4 20 12 6 20 6 4"></polygon>
+                            </svg>
+                            <svg class="player-pause-icon" style="display: none;" viewBox="0 0 24 24" width="26" height="26" fill="currentColor">
+                                <rect x="6" y="4" width="4" height="16" rx="1"></rect>
+                                <rect x="14" y="4" width="4" height="16" rx="1"></rect>
+                            </svg>
+                        </button>
+                        <button type="button" class="player-ctrl-btn" id="playerNextBtn" aria-label="Next Track">
+                            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                                <polygon points="5 4 15 12 5 20 5 4"></polygon>
+                                <line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"></line>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="now-playing-progress-section">
+                        <div class="progress-slider-container">
+                            <input type="range" class="player-progress-slider" id="playerProgressBar" min="0" max="100" value="0" step="0.1" aria-label="Seek track position">
+                        </div>
+                        <div class="progress-time-row">
+                            <span class="player-time" id="playerCurrentTime">00:00</span>
+                            <span class="player-time-divider">/</span>
+                            <span class="player-time" id="playerDuration">00:00</span>
+                        </div>
+                    </div>
+
+                    <div class="now-playing-bottom-row">
+                        <div class="now-playing-volume">
+                            <button type="button" class="player-vol-btn" id="playerMuteBtn" aria-label="Mute or Unmute">
+                                <svg class="vol-icon-high" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor"></polygon>
+                                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                                </svg>
+                                <svg class="vol-icon-mute" style="display: none;" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor"></polygon>
+                                    <line x1="23" y1="9" x2="17" y2="15"></line>
+                                    <line x1="17" y1="9" x2="23" y2="15"></line>
+                                </svg>
+                            </button>
+                            <input type="range" class="player-volume-slider" id="playerVolumeSlider" min="0" max="100" value="80" aria-label="Volume Slider">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Up Next Queue Drawer -->
+            <div class="player-queue-drawer" id="playerQueueDrawer" style="display: none;" aria-label="Up Next Queue">
+                <div class="queue-drawer-header">
+                    <div class="queue-title-wrap">
+                        <h4 class="queue-title">UP NEXT</h4>
+                        <span class="queue-subtitle" id="queueSubtitleText">0 songs in queue</span>
+                    </div>
+                    <button type="button" class="queue-close-btn" id="queueCloseBtn" aria-label="Close Queue">×</button>
+                </div>
+                <div class="queue-list" id="playerQueueList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Song List -->
+    <div class="playlist-songs-section">
+        <div class="youtube-results-grid moodtune-song-list" id="playlistSongsGrid" data-playlist-id="{{ playlist.id }}">
+            {% if songs %}
+                {% for song in songs %}
+                    <div class="music-card music-song-row glass-panel" id="playlistSongRow-{{ song.id }}" data-song-id="{{ song.id }}" data-video-id="{{ song.video_id }}" data-index="{{ loop.index0 }}" data-title="{{ song.title }}" data-channel-title="{{ song.channel_title }}" data-thumbnail="{{ song.thumbnail }}" data-youtube-url="{{ song.youtube_url }}">
+                        <div class="song-row-art-wrap">
+                            <div class="mood-artwork-box mood-art-chill" data-mood="Playlist">
+                                <span class="mood-art-icon">🎵</span>
+                                <div class="card-now-playing-badge" aria-hidden="true">
+                                    <span class="equalizer-bars-mini">
+                                        <span class="eq-bar"></span>
+                                        <span class="eq-bar"></span>
+                                        <span class="eq-bar"></span>
+                                        <span class="eq-bar"></span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="song-row-info">
+                            <div class="song-row-title-row">
+                                <span class="song-row-index">{{ "%02d" % song.position }}</span>
+                                <h4 class="music-card-title song-row-title" title="{{ song.title }}">{{ song.title }}</h4>
+                            </div>
+                            <div class="song-row-meta">
+                                <span class="song-meta-pill">Track {{ song.position }}</span>
+                                <span class="music-card-channel song-meta-channel">
+                                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M9 18V5l12-2v13"></path>
+                                        <circle cx="6" cy="18" r="3"></circle>
+                                        <circle cx="18" cy="16" r="3"></circle>
+                                    </svg>
+                                    <span>{{ song.channel_title or 'YouTube' }}</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="song-row-actions music-card-actions">
+                            <button type="button" class="btn btn-primary btn-play-song" data-video-id="{{ song.video_id }}" data-index="{{ loop.index0 }}" aria-label="Play {{ song.title }}">
+                                <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+                                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                                </svg>
+                                <span class="btn-play-label">Play</span>
+                            </button>
+                            <a href="{{ song.youtube_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-youtube-watch" aria-label="Watch on YouTube" title="Watch on YouTube">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                                </svg>
+                                <span>Watch</span>
+                            </a>
+                            <button type="button" class="btn btn-ghost btn-sm btn-remove-song" data-playlist-id="{{ playlist.id }}" data-song-id="{{ song.id }}" data-title="{{ song.title }}" aria-label="Remove {{ song.title }} from playlist" title="Remove song">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                </svg>
+                                <span>Remove</span>
+                            </button>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="playlist-empty-songs glass-panel" id="playlistEmptySongsNotice">
+                    <div class="empty-icon">🎵</div>
+                    <h3 class="empty-title">This playlist is currently empty</h3>
+                    <p class="empty-desc">Discover music using AI or manual search on the home page and click <strong>+ Playlist</strong> to add songs here.</p>
+                    <a href="{{ url_for('main.index') }}" class="btn btn-primary btn-sm">
+                        <span>Go to Music Discovery</span>
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Delete Playlist Confirmation -->
+<div class="playlist-modal-overlay" id="deletePlaylistModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="deletePlaylistModalTitle">
+    <div class="playlist-modal-backdrop" id="deletePlaylistModalBackdrop"></div>
+    <div class="playlist-modal-card glass-panel" role="document">
+        <button type="button" class="playlist-modal-close" id="deletePlaylistCloseBtn" aria-label="Close modal">×</button>
+        <div class="playlist-modal-header text-center">
+            <span class="playlist-modal-badge badge-danger">Confirm Delete</span>
+            <h3 class="playlist-modal-title" id="deletePlaylistModalTitle">Delete Playlist</h3>
+            <p class="playlist-modal-desc">Are you sure you want to delete "{{ playlist.name }}"? This action cannot be undone.</p>
+        </div>
+        <form id="deletePlaylistForm" class="playlist-modal-form" action="{{ url_for('playlist.delete_playlist', playlist_id=playlist.id) }}" method="POST">
+            <input type="hidden" name="playlist_id" value="{{ playlist.id }}">
+            <div class="playlist-modal-actions">
+                <button type="button" class="btn btn-secondary" id="cancelDeletePlaylistBtn">Cancel</button>
+                <button type="submit" class="btn btn-danger" id="confirmDeletePlaylistBtn">
+                    <span>Delete Playlist</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
